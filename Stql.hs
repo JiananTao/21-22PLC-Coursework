@@ -18,8 +18,9 @@ main' = do (fileName : _ ) <- getArgs
            let parsedProg = parseCalc resultAlex
            putStrLn ("Parsed as " ++ show parsedProg ++ "\n")
 
-           let result = unparse (evalLoop parsedProg)
-           writeFile "out.ttl" result
+           let result = getResult (evalLoop parsedProg)
+           putStrLn ("Result as \n" ++ unlines result)
+           writeFile "out.ttl" (unlines result)
 
 noParse :: ErrorCall -> IO ()
 noParse e = do let err =  show e
