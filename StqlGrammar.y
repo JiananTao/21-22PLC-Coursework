@@ -14,7 +14,6 @@ import StqlTokens
     int    { TokenInt _ $$ } 
     true   { TokenTrue _ }
     false  { TokenFalse _ }
-    '<'    { TokenLessThan _ }
     '+'    { TokenPlus _ }
     var    { TokenVar _ $$ }
     if     { TokenIf _ }
@@ -40,7 +39,6 @@ import StqlTokens
 %nonassoc then
 %nonassoc else
 %left fst snd
-%nonassoc '<'
 %left '+'
 %left ','
 %nonassoc int true false var '(' ')'
@@ -56,7 +54,6 @@ Exp : int                                       { TmInt $1 }
     | false                                     { TmFalse } 
     | '('')'                                    { TmUnit }
     | '(' Exp ',' Exp ')'                       { TmPair $2 $4 }
-    | Exp '<' Exp                               { TmCompare $1 $3 } 
     | Exp '+' Exp                               { TmAdd $1 $3 }
     | fst Exp                                   { TmFst $2 }
     | snd Exp                                   { TmSnd $2 }
@@ -85,7 +82,7 @@ data StqlType = TyInt | TyBool | TyUnit | TyPair StqlType StqlType | TyFun StqlT
 
 type Environment = [ (String,Expr) ]
 
-data Expr = TmInt Int | TmTrue | TmFalse | TmUnit | TmCompare Expr Expr 
+data Expr = TmInt Int | TmTrue | TmFalse | TmUnit 
             | TmPair Expr Expr | TmAdd Expr Expr | TmVar String 
             | TmFst Expr | TmSnd Expr
             | TmIf Expr Expr Expr | TmLet String StqlType Expr Expr

@@ -19,7 +19,6 @@ $white+       ;
   $digit+        { tok (\p s -> TokenInt p (read s)) }
   true           { tok (\p s -> TokenTrue p) }
   false          { tok (\p s -> TokenFalse p) }
-  \<             { tok (\p s -> TokenLessThan p) }
   \+             { tok (\p s -> TokenPlus p) }
   if             { tok (\p s -> TokenIf p) }
   then           { tok (\p s -> TokenThen p) }
@@ -51,7 +50,6 @@ data StqlToken =
   TokenInt AlexPosn Int          | 
   TokenTrue AlexPosn             |
   TokenFalse AlexPosn            |
-  TokenLessThan AlexPosn         |
   TokenPlus AlexPosn             |
   TokenIf AlexPosn               |
   TokenThen AlexPosn             |
@@ -78,7 +76,6 @@ tokenPosn (TokenTypeArr  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenInt  (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenTrue  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenFalse  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenLessThan  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenPlus  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenIf (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenThen (AlexPn a l c)) = show(l) ++ ":" ++ show(c)

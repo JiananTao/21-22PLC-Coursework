@@ -16,9 +16,8 @@ import StqlGrammar
     deriving (Show,Eq)
 -}
 
-data Frame = HCompare Expr Environment
-           | CompareH Expr
-           | HAdd Expr Environment | AddH Expr
+data Frame =
+           HAdd Expr Environment | AddH Expr
            | HPair Expr Environment | PairH Expr
            | FstH | SndH
            | HIf Expr Expr Environment | HLet String StqlType Expr Environment
@@ -66,13 +65,6 @@ eval1 (v,env,[],r,(Processing e):p) | isValue v = (e,env,[],v:r,p)
 -- Evaluation rules for End operator
 eval1 (TmEnd2 e,env,k,r,p) = (e,env,k,r,p)
 eval1 (TmEnd e1 e2,env,k,r,p) = (e1,env,k,r,Processing e2:p)
-
-
--- Evaluation rules for less than operator
-eval1 (TmCompare e1 e2,env,k,r,p) = (e1,env,HCompare e2 env:k,r,p)
-eval1 (TmInt n,env1,(HCompare e env2):k,r,p) = (e,env2,CompareH (TmInt n) : k,r,p)
-eval1 (TmInt m,env,(CompareH (TmInt n)):k,r,p) | n < m = (TmTrue,[],k,r,p)
-                                               | otherwise = (TmFalse,[],k,r,p)
 
 -- Evaluation rules for plus operator
 eval1 (TmAdd e1 e2,env,k,r,p) = (e1,env,HAdd e2 env:k,r,p)
