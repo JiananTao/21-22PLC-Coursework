@@ -18,7 +18,6 @@ $white+       ;
   "->"           { tok (\p s -> TokenTypeArr p) }
   \,             { tok (\p s -> TokenComma p) }
   $digit+        { tok (\p s -> TokenInt p (read s)) }
-  $alpha [$alpha $digit \_ \’]* { tok (\p s -> TokenString p s) }
   true           { tok (\p s -> TokenTrue p) }
   false          { tok (\p s -> TokenFalse p) }
   "++"           { tok (\p s -> TokenPlusString p) }
@@ -32,11 +31,13 @@ $white+       ;
   \:             { tok (\p s -> TokenHasType p) }
   let            { tok (\p s -> TokenLet p )}
   =              { tok (\p s -> TokenEq p )}
-  in             { tok (\p s -> TokenIn p )}
   \(             { tok (\p s -> TokenLParen p) }
   \)             { tok (\p s -> TokenRParen p) }
   \.             { tok (\p s -> TokenEnd p) }
-  $alpha [$alpha $digit \_ \’]*   { tok (\p s -> TokenVar p s) } 
+  READFILE       {\p s -> TokenReadFile p}
+  VAR$alpha [$alpha $digit \_ \’]*     { tok (\p s -> TokenVar p s) }
+  $alpha [$alpha $digit \_ \’]*     { tok (\p s -> TokenString p s) }
+  \"[$alpha $digit \_ \']*.ttl\"    {\p s -> TokenFilePath p s}
 
 { 
 -- Each action has type :: AlexPosn -> String -> MDLToken 
@@ -66,11 +67,12 @@ data StqlToken =
   TokenHasType AlexPosn          |
   TokenLet AlexPosn              |
   TokenEq AlexPosn               |
-  TokenIn AlexPosn               |
   TokenLParen AlexPosn           |
   TokenRParen AlexPosn           |
   TokenComma AlexPosn            | 
   TokenVar AlexPosn String       |
+  TokenReadFile AlexPosn         |
+  TokenFilePath AlexPosn String  |
   TokenEnd AlexPosn
   deriving (Eq,Show) 
 
@@ -95,10 +97,11 @@ tokenPosn (TokenLambda (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenHasType (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenLet (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenEq  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenIn  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenLParen (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenRParen (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenComma (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenVar (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenEnd (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenReadFile (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenFilePath (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 }

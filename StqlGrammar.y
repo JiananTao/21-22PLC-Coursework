@@ -28,16 +28,17 @@ import StqlTokens
     let    { TokenLet _ }
     ':'    { TokenHasType _}
     '='    { TokenEq _ }
-    in     { TokenIn _ }
     '('    { TokenLParen _ } 
     ')'    { TokenRParen _ } 
     ','    { TokenComma _ }
     '.'    { TokenEnd _}
+    path             {TokenFilePath _ $$}
+    READFILE         {TokenReadFile _ }
 
 %left '.'
 %left arr
 %right let
-%right in
+%right '='
 %nonassoc if
 %nonassoc then
 %nonassoc else
@@ -65,11 +66,12 @@ Exp : int                                       { TmInt $1 }
     | snd Exp                                   { TmSnd $2 }
     | if Exp then Exp else Exp                  { TmIf $2 $4 $6 } 
     | lam '(' var ':' Type ')' Exp              { TmLambda $3 $5 $7 }
-    | let '(' var ':' Type ')' '=' Exp in Exp   { TmLet $3 $5 $8 $10 }
+    | let '(' var ':' Type ')' '=' Exp          { TmLet $3 $5 $8 }
     | Exp Exp %prec APP                         { TmApp $1 $2 } 
     | '(' Exp ')'                               { $2 }
     | Exp '.' Exp                               { TmEnd $3 $1}
     | Exp '.'                                   { TmEnd2 $1 }
+
 
 Type : Bool                     { TyBool } 
      | Int                      { TyInt } 
@@ -77,6 +79,8 @@ Type : Bool                     { TyBool }
      | Unit                     { TyUnit }
      | '(' Type ',' Type ')'    { TyPair $2 $4 }
      | Type arr Type            { TyFun $1 $3 } 
+
+Function : READFILE path        {TmReadTTLFile $2}
 
 
 { 
@@ -92,9 +96,12 @@ type Environment = [ (String,Expr) ]
 data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit 
             | TmPair Expr Expr | TmAdd Expr Expr | TmVar String 
             | TmFst Expr | TmSnd Expr | TmAddString Expr Expr
-            | TmIf Expr Expr Expr | TmLet String StqlType Expr Expr
+            | TmIf Expr Expr Expr | TmLet String StqlType Expr
             | TmLambda String StqlType Expr | TmApp Expr Expr 
             | TmEnd Expr Expr | TmEnd2 Expr
             | Cl String StqlType Expr Environment
+            | TmReadTTLFile String
     deriving (Show,Eq)
+--TmFile 仅在此处出现
+
 } 
