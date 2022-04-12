@@ -65,7 +65,7 @@ Exp : int                                       { TmInt $1 }
     | let '(' var ':' Type ')' '=' Exp in Exp   { TmLet $3 $5 $8 $10 }
     | Exp Exp %prec APP                         { TmApp $1 $2 } 
     | '(' Exp ')'                               { $2 }
-    | Exp '.' Exp                               { TmEnd $1 $3}
+    | Exp '.' Exp                               { TmEnd $3 $1}
     | Exp '.'                                   { TmEnd2 $1 }
 
 Type : Bool                     { TyBool } 
