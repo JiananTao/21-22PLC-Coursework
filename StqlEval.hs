@@ -122,7 +122,7 @@ evalLoop :: Expr -> [Expr]
 evalLoop e = eval (e,[],[],[],[])
 
 eval :: (Expr, Environment, Kontinuation, Result, Processing) -> [Expr]
-eval (e,env,k,r,p) | e' == e && isValue e' && null k && null p  = r
+eval (e,env,k,r,p) | e' == e && isValue e' && null k && null p  = r'
                    | otherwise                                  = eval (e',env',k',r',p')
             where (e',env',k',r',p') = eval1 (e,env,k,r,p)
 
