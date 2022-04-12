@@ -9,11 +9,14 @@ import StqlTokens
 %token 
     Bool   { TokenTypeBool _ } 
     Int    { TokenTypeInt _ } 
+    String { TokenTypeString _ }
     Unit   { TokenTypeUnit _ }
     arr    { TokenTypeArr _ } 
-    int    { TokenInt _ $$ } 
+    int    { TokenInt _ $$ }
+    string { TokenString _ $$ } 
     true   { TokenTrue _ }
     false  { TokenFalse _ }
+    '++'   { TokenPlusString _ }
     '+'    { TokenPlus _ }
     var    { TokenVar _ $$ }
     if     { TokenIf _ }
@@ -40,6 +43,7 @@ import StqlTokens
 %nonassoc else
 %left fst snd
 %left '+'
+%left '++'
 %left ','
 %nonassoc int true false var '(' ')'
 %left lam
@@ -49,11 +53,13 @@ import StqlTokens
 
 %% 
 Exp : int                                       { TmInt $1 } 
+    | string                                    { TmString $1 } 
     | var                                       { TmVar $1 }
     | true                                      { TmTrue }
     | false                                     { TmFalse } 
     | '('')'                                    { TmUnit }
     | '(' Exp ',' Exp ')'                       { TmPair $2 $4 }
+    | Exp '++' Exp                              { TmAddString $1 $3 }
     | Exp '+' Exp                               { TmAdd $1 $3 }
     | fst Exp                                   { TmFst $2 }
     | snd Exp                                   { TmSnd $2 }
@@ -67,6 +73,7 @@ Exp : int                                       { TmInt $1 }
 
 Type : Bool                     { TyBool } 
      | Int                      { TyInt } 
+     | String                   { TyString }
      | Unit                     { TyUnit }
      | '(' Type ',' Type ')'    { TyPair $2 $4 }
      | Type arr Type            { TyFun $1 $3 } 
@@ -77,14 +84,14 @@ parseError :: [StqlToken] -> a
 parseError [] = error "Unknown Parse Error" 
 parseError (t:ts) = error ("Parse error at line:column " ++ (tokenPosn t))
 
-data StqlType = TyInt | TyBool | TyUnit | TyPair StqlType StqlType | TyFun StqlType StqlType
+data StqlType = TyInt | TyString | TyBool | TyUnit | TyPair StqlType StqlType | TyFun StqlType StqlType
    deriving (Show,Eq)
 
 type Environment = [ (String,Expr) ]
 
-data Expr = TmInt Int | TmTrue | TmFalse | TmUnit 
+data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit 
             | TmPair Expr Expr | TmAdd Expr Expr | TmVar String 
-            | TmFst Expr | TmSnd Expr
+            | TmFst Expr | TmSnd Expr | TmAddString Expr Expr
             | TmIf Expr Expr Expr | TmLet String StqlType Expr Expr
             | TmLambda String StqlType Expr | TmApp Expr Expr 
             | TmEnd Expr Expr | TmEnd2 Expr

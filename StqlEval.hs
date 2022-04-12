@@ -3,21 +3,24 @@
 module StqlEval where
 import StqlGrammar
 {-
---Data structures as defined in StqlGrammar:
---data StqlType = TyInt | TyBool | TyUnit | TyPair StqlType StqlType | TyFun StqlType StqlType
---type Environment = [ (String,Expr) ]
---data Expr = TmInt Int | TmTrue | TmFalse | TmUnit | TmCompare Expr Expr 
+data StqlType = TyInt | TyString | TyBool | TyUnit | TyPair StqlType StqlType | TyFun StqlType StqlType
+   deriving (Show,Eq)
+
+type Environment = [ (String,Expr) ]
+
+data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit 
             | TmPair Expr Expr | TmAdd Expr Expr | TmVar String 
-            | TmFst Expr | TmSnd Expr
+            | TmFst Expr | TmSnd Expr | TmAddString Expr Expr
             | TmIf Expr Expr Expr | TmLet String StqlType Expr Expr
             | TmLambda String StqlType Expr | TmApp Expr Expr 
-            | TmEnd Expr Expr 
+            | TmEnd Expr Expr | TmEnd2 Expr
             | Cl String StqlType Expr Environment
     deriving (Show,Eq)
 -}
 
 data Frame =
-           HAdd Expr Environment | AddH Expr
+           HAdd Expr Environment | AddH Expr 
+           | HPlus Expr Environment | PlusH Expr
            | HPair Expr Environment | PairH Expr
            | FstH | SndH
            | HIf Expr Expr Environment | HLet String StqlType Expr Environment
@@ -44,6 +47,7 @@ update env x e = (x,e) : env
 
 -- Checks for terminated expressions
 isValue :: Expr -> Bool
+isValue (TmString _) = True 
 isValue (TmInt _) = True
 isValue TmTrue = True
 isValue TmFalse = True
@@ -66,10 +70,15 @@ eval1 (v,env,[],r,(Processing e):p) | isValue v = (e,env,[],v:r,p)
 eval1 (TmEnd2 e,env,k,r,p) = (e,env,k,r,p)
 eval1 (TmEnd e1 e2,env,k,r,p) = (e1,env,k,r,Processing e2:p)
 
--- Evaluation rules for plus operator
+-- Evaluation rules for plus number operator
 eval1 (TmAdd e1 e2,env,k,r,p) = (e1,env,HAdd e2 env:k,r,p)
 eval1 (TmInt n,env1,(HAdd e env2):k,r,p) = (e,env2,AddH (TmInt n) : k,r,p)
 eval1 (TmInt m,env,(AddH (TmInt n)):k,r,p) = (TmInt (n + m),[],k,r,p)
+
+-- Evaluation rules for plus string operator
+eval1 (TmAddString e1 e2,env,k,r,p) = (e1,env,HPlus e2 env:k,r,p)
+eval1 (TmString n,env1,(HPlus e env2):k,r,p) = (e,env2,PlusH (TmString n) : k,r,p)
+eval1 (TmString m,env,(PlusH (TmString n)):k,r,p) = (TmString (n ++ m),[],k,r,p)
 
 -- Evaluation rules for projections
 eval1 (TmFst e1,env,k,r,p) = (e1,env, FstH : k,r,p)
@@ -120,6 +129,7 @@ eval (e,env,k,r,p) | e' == e && isValue e' && null k && null p  = r'
 
 -- Function to unparse underlying values from the AST term
 unparse :: Expr -> String
+unparse (TmString n) = n
 unparse (TmInt n) = show n
 unparse TmTrue = "true"
 unparse TmFalse = "false"
