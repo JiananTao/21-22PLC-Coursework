@@ -12,7 +12,7 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmPair Expr Expr | TmAdd Expr Expr | TmVar String 
             | TmFst Expr | TmSnd Expr | TmAddString Expr Expr
             | TmIf Expr Expr Expr | TmLet String StqlType Expr Expr
-            | TmLambda String StqlType Expr | TmApp Expr Expr 
+            | TmApp Expr Expr 
             | TmEnd Expr Expr | TmEnd2 Expr
             | Cl String StqlType Expr Environment
             | TmReadTTLFile String
@@ -31,11 +31,6 @@ type Kontinuation = [ Frame ]
 type Result = [Expr]
 type Processing = [Frame]
 type State = (Expr,Environment,Kontinuation,Result,Processing)
-
--- Function to unpack a closure to extract the underlying lambda term and environment
-unpack :: Expr -> Environment -> (Expr,Environment)
-unpack (Cl x t e env1) env = (TmLambda x t e , env1)
-unpack e env = (e,env)
 
 -- Look up a value in an environment and unpack it
 getValueBinding :: String -> Environment -> Expr
@@ -107,9 +102,6 @@ eval1 (TmIf e1 e2 e3,env,k,r,p) = (e1,env,HIf e2 e3 env:k,r,p)
 eval1 (TmTrue,env1,(HIf e2 e3 env2):k,r,p) = (e2,env2 ++ env1,k,r,p)
 eval1 (TmFalse,env1,(HIf e2 e3 env2):k,r,p) = (e3,env2 ++ env1,k,r,p)
 
-
---  Rule to make closures from lambda abstractions.
-eval1 (TmLambda x typ e,env,k,r,p) = (Cl x typ e env, env, k,r,p)
 
 -- Evaluation rules for application
 eval1 (TmApp e1 e2,env,k,r,p) = (e1,env, HApp e2 env : k,r,p)

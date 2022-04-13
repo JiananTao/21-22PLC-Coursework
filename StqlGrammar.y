@@ -24,7 +24,6 @@ import StqlTokens
     else   { TokenElse _ }
     fst    { TokenFst _ }
     snd    { TokenSnd _ }
-    lam    { TokenLambda _}
     let    { TokenLet _ }
     ':'    { TokenHasType _}
     '='    { TokenEq _ }
@@ -47,7 +46,6 @@ import StqlTokens
 %left '++'
 %left ','
 %nonassoc int true false var '(' ')'
-%left lam
 %left APP
 
 
@@ -65,7 +63,6 @@ Exp : int                                       { TmInt $1 }
     | fst Exp                                   { TmFst $2 }
     | snd Exp                                   { TmSnd $2 }
     | if Exp then Exp else Exp                  { TmIf $2 $4 $6 } 
-    | lam '(' var ':' Type ')' Exp              { TmLambda $3 $5 $7 }
     | let '(' var ':' Type ')' '=' Exp          { TmLet $3 $5 $8 }
     | Exp Exp %prec APP                         { TmApp $1 $2 } 
     | '(' Exp ')'                               { $2 }
@@ -97,7 +94,7 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmPair Expr Expr | TmAdd Expr Expr | TmVar String 
             | TmFst Expr | TmSnd Expr | TmAddString Expr Expr
             | TmIf Expr Expr Expr | TmLet String StqlType Expr
-            | TmLambda String StqlType Expr | TmApp Expr Expr 
+            | TmApp Expr Expr 
             | TmEnd Expr Expr | TmEnd2 Expr
             | Cl String StqlType Expr Environment
             | TmReadTTLFile String
