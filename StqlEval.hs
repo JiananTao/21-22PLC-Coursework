@@ -11,7 +11,8 @@ type Environment = [ (String,Expr) ]
 data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit 
             | TmPair Expr Expr | TmAdd Expr Expr | TmVar String 
             | TmFst Expr | TmSnd Expr | TmAddString Expr Expr
-            | TmIf Expr Expr Expr | TmLet String StqlType Expr Expr
+            | TmIf Expr Expr Expr | TmLet String StqlType Expr
+            | TmClear String StqlType
             | TmEnd Expr Expr | TmEnd2 Expr
             | Cl String StqlType Expr Environment
             | TmReadTTLFile String
@@ -38,6 +39,8 @@ getValueBinding x ((y,e):env) | x == y    = e
 
 update :: Environment -> String -> Expr -> Environment
 update env x e1 = (x,e1) : [ (y,e2) | (y,e2) <- env, x /= y ]  
+
+clear env x = [ (y,e2) | (y,e2) <- env, x /= y ]
 
 -- Checks for terminated expressions
 isValue :: Expr -> Bool
@@ -67,7 +70,8 @@ eval1 (TmEnd e1 e2,env,k,r,p) = (e2,env,k,r,Processing e1:p)
 
 -- Evaluation rules for Let blocks
 eval1 (TmLet x typ e,env,k,r,p) | isValue e = (e,update env x e,k,r,p)
-
+-- Evaluation rules for Clear blocks
+eval1 (TmClear x typ,env,k,r,p) = (TmString "清除",clear env x,k,r,p)
 
 -- Rule for read file evaluations
 --eval1 (TmReadTTLFile s,env,k,r,p) = (TmString (source),env,k,r,p)
