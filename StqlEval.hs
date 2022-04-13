@@ -71,6 +71,8 @@ eval1 (TmEnd e1 e2,env,k,r,p) = (e2,env,k,r,Processing e1:p)
 -- Evaluation rules for Let blocks
 eval1 (TmLet x typ (TmVar y),env,k,r,p) = (TmLet x typ e',env,k,r,p)
                     where e' = getValueBinding y env
+eval1 (TmLet x typ (TmReadTTLFile s),env,k,r,p) = (TmLet x typ e',env,k,r,p)
+                    where e' = getValueBinding ("VAR" ++ (s \\ ".ttl")) env
 eval1 (TmLet x typ e,env,k,r,p) | isValue e = (e,update env x e,k,r,p)
 
 -- Evaluation rules for Clear blocks
