@@ -12,7 +12,6 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmPair Expr Expr | TmAdd Expr Expr | TmVar String 
             | TmFst Expr | TmSnd Expr | TmAddString Expr Expr
             | TmIf Expr Expr Expr | TmLet String StqlType Expr Expr
-            | TmApp Expr Expr 
             | TmEnd Expr Expr | TmEnd2 Expr
             | Cl String StqlType Expr Environment
             | TmReadTTLFile String
@@ -25,7 +24,6 @@ data Frame =
            | HPair Expr Environment | PairH Expr
            | FstH | SndH
            | HIf Expr Expr Environment
-           | HApp Expr Environment | AppH Expr
            | Processing Expr
 type Kontinuation = [ Frame ]
 type Result = [Expr]
@@ -75,7 +73,6 @@ eval1 (TmLet x typ e,env,k,r,p) | isValue e = (e,update env x e,k,r,p)
 --eval1 (TmReadTTLFile s,env,k,r,p) = (TmString (source),env,k,r,p)
 
 
-
 -- Evaluation rules for plus number operator
 eval1 (TmAdd e1 e2,env,k,r,p) = (e1,env,HAdd e2 env:k,r,p)
 eval1 (TmInt n,env1,(HAdd e env2):k,r,p) = (e,env2 ++ env1,AddH (TmInt n) : k,r,p)
@@ -101,12 +98,6 @@ eval1 (w,env,(PairH v):k,r,p) | isValue w = ( TmPair v w,env,k,r,p)
 eval1 (TmIf e1 e2 e3,env,k,r,p) = (e1,env,HIf e2 e3 env:k,r,p)
 eval1 (TmTrue,env1,(HIf e2 e3 env2):k,r,p) = (e2,env2 ++ env1,k,r,p)
 eval1 (TmFalse,env1,(HIf e2 e3 env2):k,r,p) = (e3,env2 ++ env1,k,r,p)
-
-
--- Evaluation rules for application
-eval1 (TmApp e1 e2,env,k,r,p) = (e1,env, HApp e2 env : k,r,p)
-eval1 (v,env1,(HApp e env2):k ,r,p) | isValue v = (e, env2 ++ env1, AppH v : k,r,p)
-eval1 (v,env1,(AppH (Cl x typ e env2) ) : k ,r,p)  = (e, update env2 x v, k,r,p)
 
 -- Rule for runtime errors
 eval1 (e,env,k,r,p) = error "Evaluation Error"
