@@ -2,6 +2,7 @@
 -- Provides a CEK implementation of the \Stql language from the lecture notes
 module StqlEval where
 import StqlGrammar
+import Data.List
 {-
 data StqlType = TyInt | TyString | TyBool | TyUnit | TyPair StqlType StqlType | TyFun StqlType StqlType
    deriving (Show,Eq)
@@ -14,7 +15,6 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmIf Expr Expr Expr | TmLet String StqlType Expr
             | TmClear String StqlType
             | TmEnd Expr Expr | TmEnd2 Expr
-            | Cl String StqlType Expr Environment
             | TmReadTTLFile String
     deriving (Show,Eq)
 -}
@@ -50,7 +50,6 @@ isValue TmTrue = True
 isValue TmFalse = True
 isValue TmUnit = True
 isValue (TmPair e1 e2) = isValue e1 && isValue e2
-isValue Cl {} = True
 isValue _ = False
 
 
@@ -71,10 +70,10 @@ eval1 (TmEnd e1 e2,env,k,r,p) = (e2,env,k,r,Processing e1:p)
 -- Evaluation rules for Let blocks
 eval1 (TmLet x typ e,env,k,r,p) | isValue e = (e,update env x e,k,r,p)
 -- Evaluation rules for Clear blocks
-eval1 (TmClear x typ,env,k,r,p) = (TmString "清除",clear env x,k,r,p)
+eval1 (TmClear x typ,env,k,r,p) = (TmString ("clear " ++ x),clear env x,k,r,p)
 
--- Rule for read file evaluations
---eval1 (TmReadTTLFile s,env,k,r,p) = (TmString (source),env,k,r,p)
+-- Rule for read file evaluations Read a pre-stored file string
+eval1 (TmReadTTLFile s,env,k,r,p) = (TmVar ("VAR" ++ (s \\ ".ttl")),env,k,r,p)
 
 
 -- Evaluation rules for plus number operator
@@ -123,7 +122,6 @@ unparse TmTrue = "true"
 unparse TmFalse = "false"
 unparse TmUnit = "()"
 unparse (TmPair e1 e2) = "( " ++ unparse e1 ++ " , " ++ unparse e2 ++ " )"
-unparse Cl {} = "Function Value"
 unparse _ = "Unknown"
 
 getResult :: [Expr] -> [String]

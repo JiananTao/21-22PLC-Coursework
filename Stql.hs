@@ -23,9 +23,9 @@ main' = do (fileName : _ ) <- getArgs
            let parsedProg = parseCalc resultAlex
            putStrLn ("Parsed as " ++ show parsedProg ++ "\n")
 
-           let result = unlines (getResult (evalLoop sourceBar sourceFoo parsedProg))
+           let result = unlines $ reverse (getResult (evalLoop (finalSoc sourceBar) (finalSoc sourceFoo) parsedProg))
            putStrLn ("Result as \n" ++ result)
-           writeFile "out.ttl" (listToOut (allL (socToList sourceInput)) ++ show (cFom sourceInput))
+           writeFile "out.ttl" (finalSoc sourceBar)
 
 
 noParse :: ErrorCall -> IO ()
@@ -33,8 +33,10 @@ noParse e = do let err =  show e
                hPutStr stderr err
                return ()
 
-listToOut :: [String] -> String
-listToOut = unlines
+finalSoc :: String -> [Char]
+finalSoc soc = unlines (allL (socToList soc)) ++ show (cFom soc)
+
+
 
 allL :: [String ] -> [String ]
 allL l = vars l ++ nors l 

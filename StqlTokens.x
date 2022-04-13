@@ -34,11 +34,12 @@ $white+       ;
   =              { tok (\p s -> TokenEq p )}
   \(             { tok (\p s -> TokenLParen p) }
   \)             { tok (\p s -> TokenRParen p) }
-  \.             { tok (\p s -> TokenEnd p) }
-  READFILE       {\p s -> TokenReadFile p}
+  [$alpha $digit \_ \']*.ttl    { tok (\p s -> TokenFilePath p s) }
+  \;             { tok (\p s -> TokenEnd p) }
+  READFILE       { tok (\p s -> TokenReadFile p) }
   VAR$alpha [$alpha $digit \_ \’]*     { tok (\p s -> TokenVar p s) }
   $alpha [$alpha $digit \_ \’]*     { tok (\p s -> TokenString p s) }
-  \"[$alpha $digit \_ \']*.ttl\"    {\p s -> TokenFilePath p s}
+  
 
 { 
 -- Each action has type :: AlexPosn -> String -> MDLToken 

@@ -31,11 +31,11 @@ import StqlTokens
     '('    { TokenLParen _ } 
     ')'    { TokenRParen _ } 
     ','    { TokenComma _ }
-    '.'    { TokenEnd _}
+    ';'    { TokenEnd _}
     path             {TokenFilePath _ $$}
     READFILE         {TokenReadFile _ }
 
-%left '.'
+%left ';'
 %left arr
 %right let
 %right clear
@@ -67,8 +67,9 @@ Exp : int                                       { TmInt $1 }
     | let '(' var ':' Type ')' '=' Exp          { TmLet $3 $5 $8 }
     | clear '(' var ':' Type ')'                { TmClear $3 $5 }
     | '(' Exp ')'                               { $2 }
-    | Exp '.' Exp                               { TmEnd $3 $1}
-    | Exp '.'                                   { TmEnd2 $1 }
+    | Exp ';' Exp                               { TmEnd $3 $1}
+    | Exp ';'                                   { TmEnd2 $1 }
+    | READFILE path        {TmReadTTLFile $2}
 
 
 Type : Bool                     { TyBool } 
@@ -78,7 +79,6 @@ Type : Bool                     { TyBool }
      | '(' Type ',' Type ')'    { TyPair $2 $4 }
      | Type arr Type            { TyFun $1 $3 } 
 
-Function : READFILE path        {TmReadTTLFile $2}
 
 
 { 
@@ -97,7 +97,6 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmIf Expr Expr Expr | TmLet String StqlType Expr
             | TmClear String StqlType
             | TmEnd Expr Expr | TmEnd2 Expr
-            | Cl String StqlType Expr Environment
             | TmReadTTLFile String
     deriving (Show,Eq)
 
