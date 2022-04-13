@@ -38,7 +38,7 @@ getValueBinding x ((y,e):env) | x == y    = e
                               | otherwise = getValueBinding x env
 
 update :: Environment -> String -> Expr -> Environment
-update env x e1 = (x,e1) : [ (y,e2) | (y,e2) <- env, x /= y ]  
+update env x e1 = (x,e1) : [ (y,e2) | (y,e2) <- env, x /= y ]
 
 clear :: Environment -> String -> Environment
 clear env x = [ (y,e2) | (y,e2) <- env, x /= y ]
@@ -58,7 +58,7 @@ isValue _ = False
 --Small step evaluation function
 eval1 :: State -> State
 eval1 (TmVar x,env,k,r,p) = (e',env,k,r,p)
-                    where e' = getValueBinding x env
+                    where e' = getValueBinding (str x) env
 
 -- Rule for terminated evaluations
 eval1 (v,env,[],r,[]) | isValue v = (v,env,[],v:r,[])
@@ -69,17 +69,20 @@ eval1 (TmEnd2 e,env,k,r,p) = (e,env,k,r,p)
 eval1 (TmEnd e1 e2,env,k,r,p) = (e2,env,k,r,Processing e1:p)
 
 -- Evaluation rules for Let blocks
-eval1 (TmLet x typ (TmVar y),env,k,r,p) = (TmLet x typ e',env,k,r,p)
-                    where e' = getValueBinding y env
-eval1 (TmLet x typ (TmReadTTLFile s),env,k,r,p) = (TmLet x typ e',env,k,r,p)
-                    where e' = getValueBinding ("VAR" ++ (s \\ ".ttl")) env
-eval1 (TmLet x typ e,env,k,r,p) | isValue e = (e,update env x e,k,r,p)
+eval1 (TmLet x typ (TmVar y),env,k,r,p) = (TmLet (str x) typ e',env,k,r,p)
+                    where e' = getValueBinding (str y) env
+eval1 (TmLet x typ (TmReadTTLFile s),env,k,r,p) = (TmLet (str x) typ e',env,k,r,p)
+                    where e' = getValueBinding ("VAR" ++ ((str s) \\ ".ttl")) env
+eval1 (TmLet x typ e,env,k,r,p) | isValue e = (e,update env (str x) e,k,r,p)
+
+-- Evaluation rules for Split blocks
+
 
 -- Evaluation rules for Clear blocks
-eval1 (TmClear x typ,env,k,r,p) = (TmString ("clear " ++ x),clear env x,k,r,p)
+eval1 (TmClear x typ,env,k,r,p) = (TmString ("clear " ++ str x),clear env x,k,r,p)
 
 -- Rule for read file evaluations Read a pre-stored file string
-eval1 (TmReadTTLFile s,env,k,r,p) = (TmVar ("VAR" ++ (s \\ ".ttl")),env,k,r,p)
+eval1 (TmReadTTLFile s,env,k,r,p) = (TmVar ("VAR" ++ ((str s) \\ ".ttl")),env,k,r,p)
 
 
 -- Evaluation rules for plus number operator
@@ -89,8 +92,8 @@ eval1 (TmInt m,env,(AddH (TmInt n)):k,r,p) = (TmInt (n + m),env,k,r,p)
 
 -- Evaluation rules for plus string operator
 eval1 (TmAddString e1 e2,env,k,r,p) = (e1,env,HPlus e2 env:k,r,p)
-eval1 (TmString n,env1,(HPlus e env2):k,r,p) = (e,env2 ++ env1,PlusH (TmString n) : k,r,p)
-eval1 (TmString m,env,(PlusH (TmString n)):k,r,p) = (TmString (n ++ m),env,k,r,p)
+eval1 (TmString n,env1,(HPlus e env2):k,r,p) = (e,env2 ++ env1,PlusH (TmString (str n)) : k,r,p)
+eval1 (TmString m,env,(PlusH (TmString n)):k,r,p) = (TmString (n ++ str m),env,k,r,p)
 
 -- Evaluation rules for projections
 eval1 (TmFst e1,env,k,r,p) = (e1,env, FstH : k,r,p)
@@ -115,6 +118,7 @@ eval1 (e,env,k,r,p) = error "Evaluation Error"
 evalLoop :: String -> String -> Expr -> [Expr]
 evalLoop bar foo e = eval (e,[("VARbar",TmString bar),("VARfoo",TmString foo)],[],[],[])
 
+
 eval :: (Expr, Environment, Kontinuation, Result, Processing) -> [Expr]
 eval (e,env,k,r,p) | e' == e && isValue e' && null k && null p  = r'
                    | otherwise                                  = eval (e',env',k',r',p')
@@ -122,7 +126,7 @@ eval (e,env,k,r,p) | e' == e && isValue e' && null k && null p  = r'
 
 -- Function to unparse underlying values from the AST term
 unparse :: Expr -> String
-unparse (TmString n) = n
+unparse (TmString n) = str n
 unparse (TmInt n) = show n
 unparse TmTrue = "true"
 unparse TmFalse = "false"
@@ -132,4 +136,7 @@ unparse _ = "Unknown"
 
 getResult :: [Expr] -> [String]
 getResult = map unparse
+
+str :: String -> String
+str s = s \\ ['\"','\"']
 

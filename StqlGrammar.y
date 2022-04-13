@@ -25,6 +25,8 @@ import StqlTokens
     fst    { TokenFst _ }
     snd    { TokenSnd _ }
     let    { TokenLet _ }
+    SPLIT  { TokenSplit _ }
+    WHEN   { TokenWhen _ }
     clear  { TokenClear _ }
     ':'    { TokenHasType _}
     '='    { TokenEq _ }
@@ -65,6 +67,7 @@ Exp : int                                       { TmInt $1 }
     | snd Exp                                   { TmSnd $2 }
     | if Exp then Exp else Exp                  { TmIf $2 $4 $6 } 
     | let '(' var ':' Type ')' '=' Exp          { TmLet $3 $5 $8 }
+    | SPLIT var WHEN Exp                        { TmSplit $2 $4 }
     | clear '(' var ':' Type ')'                { TmClear $3 $5 }
     | '(' Exp ')'                               { $2 }
     | Exp ';' Exp                               { TmEnd $3 $1}
@@ -95,6 +98,7 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmPair Expr Expr | TmAdd Expr Expr | TmVar String 
             | TmFst Expr | TmSnd Expr | TmAddString Expr Expr
             | TmIf Expr Expr Expr | TmLet String StqlType Expr
+            | TmSplit String Expr
             | TmClear String StqlType
             | TmEnd Expr Expr | TmEnd2 Expr
             | TmReadTTLFile String

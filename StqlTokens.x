@@ -32,14 +32,16 @@ $white+       ;
   clear          { tok (\p s -> TokenClear p )}
   let            { tok (\p s -> TokenLet p )}
   =              { tok (\p s -> TokenEq p )}
+  SPLIT          { tok (\p s -> TokenSplit p )}
+  WHEN           { tok (\p s -> TokenWhen p )}
   \(             { tok (\p s -> TokenLParen p) }
   \)             { tok (\p s -> TokenRParen p) }
   [$alpha $digit \_ \']*.ttl    { tok (\p s -> TokenFilePath p s) }
   \;             { tok (\p s -> TokenEnd p) }
   READFILE       { tok (\p s -> TokenReadFile p) }
-  VAR$alpha [$alpha $digit \_ \’]*     { tok (\p s -> TokenVar p s) }
-  $alpha [$alpha $digit \_ \’]*     { tok (\p s -> TokenString p s) }
-  
+  $alpha [$alpha $digit \_ \’]*      { tok (\p s -> TokenVar p s) }
+  \"$alpha [$alpha $digit \_ \’]*\"  { tok (\p s -> TokenString p s) }
+
 
 { 
 -- Each action has type :: AlexPosn -> String -> MDLToken 
@@ -68,6 +70,8 @@ data StqlToken =
   TokenLambda AlexPosn           |
   TokenHasType AlexPosn          |
   TokenLet AlexPosn              |
+  TokenSplit AlexPosn            |
+  TokenWhen AlexPosn             |
   TokenClear AlexPosn            |
   TokenEq AlexPosn               |
   TokenLParen AlexPosn           |
@@ -98,6 +102,8 @@ tokenPosn (TokenFst (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenSnd (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenHasType (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenLet (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenSplit (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenWhen (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenClear (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenEq  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenLParen (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
