@@ -40,6 +40,7 @@ getValueBinding x ((y,e):env) | x == y    = e
 update :: Environment -> String -> Expr -> Environment
 update env x e1 = (x,e1) : [ (y,e2) | (y,e2) <- env, x /= y ]  
 
+clear :: Environment -> String -> Environment
 clear env x = [ (y,e2) | (y,e2) <- env, x /= y ]
 
 -- Checks for terminated expressions
@@ -68,7 +69,10 @@ eval1 (TmEnd2 e,env,k,r,p) = (e,env,k,r,p)
 eval1 (TmEnd e1 e2,env,k,r,p) = (e2,env,k,r,Processing e1:p)
 
 -- Evaluation rules for Let blocks
+eval1 (TmLet x typ (TmVar y),env,k,r,p) = (TmLet x typ e',env,k,r,p)
+                    where e' = getValueBinding y env
 eval1 (TmLet x typ e,env,k,r,p) | isValue e = (e,update env x e,k,r,p)
+
 -- Evaluation rules for Clear blocks
 eval1 (TmClear x typ,env,k,r,p) = (TmString ("clear " ++ x),clear env x,k,r,p)
 
