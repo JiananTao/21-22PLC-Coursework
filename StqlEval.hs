@@ -38,13 +38,13 @@ unpack (Cl x t e env1) env = (TmLambda x t e , env1)
 unpack e env = (e,env)
 
 -- Look up a value in an environment and unpack it
-getValueBinding :: String -> Environment -> (Expr,Environment)
+getValueBinding :: String -> Environment -> Expr
 getValueBinding x [] = error "Variable binding not found"
-getValueBinding x ((y,e):env) | x == y    = (e, (y,e):env)
+getValueBinding x ((y,e):env) | x == y    = e
                               | otherwise = getValueBinding x env
 
 update :: Environment -> String -> Expr -> Environment
-update env x e = (x,e) : env
+update env x e1 = (x,e1) : [ (y,e2) | (y,e2) <- env, x /= y ]  
 
 -- Checks for terminated expressions
 isValue :: Expr -> Bool
@@ -61,8 +61,8 @@ isValue _ = False
 
 --Small step evaluation function
 eval1 :: State -> State
-eval1 (TmVar x,env,k,r,p) = (e',env',k,r,p)
-                    where (e',env') = getValueBinding x env
+eval1 (TmVar x,env,k,r,p) = (e',env,k,r,p)
+                    where e' = getValueBinding x env
 
 -- Rule for terminated evaluations
 eval1 (v,env,[],r,[]) | isValue v = (v,env,[],v:r,[])
@@ -83,37 +83,37 @@ eval1 (TmLet x typ e,env,k,r,p) | isValue e = (e,update env x e,k,r,p)
 
 -- Evaluation rules for plus number operator
 eval1 (TmAdd e1 e2,env,k,r,p) = (e1,env,HAdd e2 env:k,r,p)
-eval1 (TmInt n,env1,(HAdd e env2):k,r,p) = (e,env2,AddH (TmInt n) : k,r,p)
-eval1 (TmInt m,env,(AddH (TmInt n)):k,r,p) = (TmInt (n + m),[],k,r,p)
+eval1 (TmInt n,env1,(HAdd e env2):k,r,p) = (e,env2 ++ env1,AddH (TmInt n) : k,r,p)
+eval1 (TmInt m,env,(AddH (TmInt n)):k,r,p) = (TmInt (n + m),env,k,r,p)
 
 -- Evaluation rules for plus string operator
 eval1 (TmAddString e1 e2,env,k,r,p) = (e1,env,HPlus e2 env:k,r,p)
-eval1 (TmString n,env1,(HPlus e env2):k,r,p) = (e,env2,PlusH (TmString n) : k,r,p)
-eval1 (TmString m,env,(PlusH (TmString n)):k,r,p) = (TmString (n ++ m),[],k,r,p)
+eval1 (TmString n,env1,(HPlus e env2):k,r,p) = (e,env2 ++ env1,PlusH (TmString n) : k,r,p)
+eval1 (TmString m,env,(PlusH (TmString n)):k,r,p) = (TmString (n ++ m),env,k,r,p)
 
 -- Evaluation rules for projections
 eval1 (TmFst e1,env,k,r,p) = (e1,env, FstH : k,r,p)
 eval1 (TmSnd e1,env,k,r,p) = (e1,env, SndH : k,r,p)
-eval1 (TmPair v w,env, FstH:k,r,p) | isValue v && isValue w = ( v , [] , k,r,p)
-eval1 (TmPair v w,env, SndH:k,r,p) | isValue v && isValue w = ( w , [] , k,r,p)
+eval1 (TmPair v w,env, FstH:k,r,p) | isValue v && isValue w = ( v , env , k,r,p)
+eval1 (TmPair v w,env, SndH:k,r,p) | isValue v && isValue w = ( w , env , k,r,p)
 
 -- Evaluation rules for pairs
 eval1 (TmPair e1 e2,env,k,r,p) = (e1,env,HPair e2 env:k,r,p)
-eval1 (v,env1,(HPair e env2):k,r,p) | isValue v = (e,env2,PairH v : k,r,p)
-eval1 (w,env,(PairH v):k,r,p) | isValue w = ( TmPair v w,[],k,r,p)
+eval1 (v,env1,(HPair e env2):k,r,p) | isValue v = (e,env2 ++ env1,PairH v : k,r,p)
+eval1 (w,env,(PairH v):k,r,p) | isValue w = ( TmPair v w,env,k,r,p)
 
 -- Evaluation rules for if-then-else
 eval1 (TmIf e1 e2 e3,env,k,r,p) = (e1,env,HIf e2 e3 env:k,r,p)
-eval1 (TmTrue,env1,(HIf e2 e3 env2):k,r,p) = (e2,env2,k,r,p)
-eval1 (TmFalse,env1,(HIf e2 e3 env2):k,r,p) = (e3,env2,k,r,p)
+eval1 (TmTrue,env1,(HIf e2 e3 env2):k,r,p) = (e2,env2 ++ env1,k,r,p)
+eval1 (TmFalse,env1,(HIf e2 e3 env2):k,r,p) = (e3,env2 ++ env1,k,r,p)
 
 
 --  Rule to make closures from lambda abstractions.
-eval1 (TmLambda x typ e,env,k,r,p) = (Cl x typ e env, [], k,r,p)
+eval1 (TmLambda x typ e,env,k,r,p) = (Cl x typ e env, env, k,r,p)
 
 -- Evaluation rules for application
 eval1 (TmApp e1 e2,env,k,r,p) = (e1,env, HApp e2 env : k,r,p)
-eval1 (v,env1,(HApp e env2):k ,r,p) | isValue v = (e, env2, AppH v : k,r,p)
+eval1 (v,env1,(HApp e env2):k ,r,p) | isValue v = (e, env2 ++ env1, AppH v : k,r,p)
 eval1 (v,env1,(AppH (Cl x typ e env2) ) : k ,r,p)  = (e, update env2 x v, k,r,p)
 
 -- Rule for runtime errors
