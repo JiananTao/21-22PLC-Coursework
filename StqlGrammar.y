@@ -25,8 +25,7 @@ import StqlTokens
     fst    { TokenFst _ }
     snd    { TokenSnd _ }
     let    { TokenLet _ }
-    SPLIT  { TokenSplit _ }
-    WHEN   { TokenWhen _ }
+    Print  { TokenPrint _ }
     clear  { TokenClear _ }
     ':'    { TokenHasType _}
     '='    { TokenEq _ }
@@ -44,6 +43,7 @@ import StqlTokens
 %right let
 %right clear
 %right READFILE
+%right Print
 %right '='
 %nonassoc if
 %nonassoc then
@@ -70,11 +70,11 @@ Exp : int                                       { TmInt $1 }
     | snd Exp                                   { TmSnd $2 }
     | if Exp then Exp else Exp                  { TmIf $2 $4 $6 } 
     | let '(' var ':' Type ')' '=' Exp          { TmLet $3 $5 $8 }
-    | SPLIT var WHEN Exp                        { TmSplit $2 $4 }
     | clear '(' var ':' Type ')'                { TmClear $3 $5 }
     | '(' Exp ')'                               { $2 }
     | Exp ';' Exp                               { TmEnd $3 $1}
     | Exp ';'                                   { TmEnd2 $1 }
+    | Print Exp                                 { TmPrint $2 }
     | READFILE path                             { TmReadTTLFile $2 }
     | GETVAR var                                { TmGetVar $2 }
     | READENV                                   { TmReadEnv }
@@ -103,7 +103,7 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmPair Expr Expr | TmAdd Expr Expr | TmVar String 
             | TmFst Expr | TmSnd Expr | TmAddString Expr Expr
             | TmIf Expr Expr Expr | TmLet String StqlType Expr
-            | TmSplit String Expr
+            | TmPrint Expr
             | TmGetVar String | TmReadEnv 
             | TmClear String StqlType
             | TmEnd Expr Expr | TmEnd2 Expr

@@ -13,17 +13,20 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmPair Expr Expr | TmAdd Expr Expr | TmVar String 
             | TmFst Expr | TmSnd Expr | TmAddString Expr Expr
             | TmIf Expr Expr Expr | TmLet String StqlType Expr
+            | TmPrint Expr
+            | TmGetVar String | TmReadEnv 
             | TmClear String StqlType
             | TmEnd Expr Expr | TmEnd2 Expr
             | TmReadTTLFile String
     deriving (Show,Eq)
+
 -}
 
 data Frame =
            HAdd Expr Environment | AddH Expr
            | HPlus Expr Environment | PlusH Expr
            | HPair Expr Environment | PairH Expr
-           | FstH | SndH
+           | FstH | SndH | Print 
            | HIf Expr Expr Environment
            | Processing Expr
 type Kontinuation = [ Frame ]
@@ -53,16 +56,23 @@ isValue TmUnit = True
 isValue (TmPair e1 e2) = isValue e1 && isValue e2
 isValue _ = False
 
-
-
 --Small step evaluation function
 eval1 :: State -> State
 eval1 (TmVar x,env,k,r,p) = (e',env,k,r,p)
                     where e' = getValueBinding (str x) env
-
 -- Rule for terminated evaluations
-eval1 (v,env,[],r,[]) | isValue v = (v,env,[],v:r,[])
-eval1 (v,env,[],r,(Processing e):p) | isValue v = (e,env,[],v:r,p)
+--eval1 (v,env,[],r,[]) | isValue v = (v,env,[],v:r,[])
+eval1 (v,env,[],r,[]) | isValue v = (v,env,[],r,[])
+--eval1 (v,env,[],r,(Processing e):p) | isValue v = (e,env,[],v:r,p)
+eval1 (v,env,[],r,(Processing e):p) | isValue v = (e,env,[],r,p)
+eval1 (v,env,Print:k,r,p) | isValue v = (v,env,[],v:r,p)
+--TODO:未考虑v不是value的情况
+eval1 (v,env,Print:k,r,(Processing e):p) | isValue v = (e,env,[],v:r,p)
+
+
+
+-- Rule for Print
+eval1 (TmPrint e,env,k,r,p) = (e,env,k ++ [Print] ,r,p)
 
 -- Evaluation rules for End operator
 eval1 (TmEnd2 e,env,k,r,p) = (e,env,k,r,p)
@@ -75,7 +85,6 @@ eval1 (TmLet x typ (TmReadTTLFile s),env,k,r,p) = (TmLet (str x) typ e',env,k,r,
                     where e' = getValueBinding ("VAR" ++ ((str s) \\ ".ttl")) env
 eval1 (TmLet x typ e,env,k,r,p) | isValue e = (e,update env (str x) e,k,r,p)
 
--- Evaluation rules for Split blocks
 
 
 -- Evaluation rules for Clear blocks
@@ -119,8 +128,6 @@ eval1 (TmReadEnv, env,k,r,p) = (TmString (listEnv env),env,k,r,p)
 -- Rule for runtime errors
 eval1 (e,env,k,r,p) = error "Evaluation Error"
 
-
-
 -- Function to iterate the small step reduction to termination
 evalLoop :: String -> String -> Expr -> [Expr]
 evalLoop bar foo e = eval (e,[("VARbar",TmString bar),("VARfoo",TmString foo)],[],[],[])
@@ -157,7 +164,7 @@ listEnv env = unlines [ s ++ unparse e | (s,e) <- env]
 varBase :: [String] -> Environment
 varBase l = [("BaseVar",TmString (varBaseStr l))]
 varBaseStr :: [String] -> String 
-varBaseStr l = head [ filter  (\x -> x /= ' ' && x /= '.' ) (s \\ "@base") | s <- l, eqString s "@base"]
+varBaseStr l = head [ init (filter  (\x -> x /= ' ') (s \\ "@base")) | s <- l, eqString s "@base"]
 
 varPrefix :: [String] -> Environment
 varPrefix l = [ procPre (s \\ "@prefix") " "  | s <- l,  eqString s "@prefix" && isInfixOf "http://" s]
@@ -171,7 +178,7 @@ socToList = wordsWhen (=='\n')
 procPre :: String -> String -> (String , Expr)
 procPre s a = (filter (\x -> x /= ' ' && x /= ':') (head (wordsWhen (=='<') s)),
                if a /= " " then TmString ((a \\ ">") ++ (filter  (\x -> x /= ' ' && x /= '.' ) ((wordsWhen (=='<') s !! 1))))
-               else TmString (filter  (\x -> x /= ' ' && x /= '.') ("<" ++ (wordsWhen (=='<') s !! 1))))
+               else TmString (init (filter  (\x -> x /= ' ') ("<" ++ (wordsWhen (=='<') s !! 1)))))
 
 
 {-
