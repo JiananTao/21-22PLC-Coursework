@@ -6,8 +6,6 @@ import Control.Exception
 import System.IO
 import Data.List
 
-
-
 main :: IO ()
 main = catch main' noParse
 

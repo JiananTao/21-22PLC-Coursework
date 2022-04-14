@@ -3,6 +3,7 @@
 module StqlEval where
 import StqlGrammar
 import Data.List
+
 {-
 data StqlType = TyInt | TyString | TyBool | TyUnit | TyPair StqlType StqlType | TyFun StqlType StqlType
    deriving (Show,Eq)
@@ -45,7 +46,8 @@ update env x e1 = (x,e1) : [ (y,e2) | (y,e2) <- env, x /= y ]
 
 clear :: Environment -> String -> Environment
 clear env x = [ (y,e2) | (y,e2) <- env, x /= y ]
-
+clearAll :: Environment -> Environment
+clearAll env = [ (y,e2) | (y,e2) <- env, y == "FILEfoo" || y == "FILEbar" ]
 -- Checks for terminated expressions
 isValue :: Expr -> Bool
 isValue (TmString _) = True
@@ -82,16 +84,17 @@ eval1 (TmEnd e1 e2,env,k,r,p) = (e2,env,k,r,Processing e1:p)
 eval1 (TmLet x typ (TmVar y),env,k,r,p) = (TmLet (str x) typ e',env,k,r,p)
                     where e' = getValueBinding (str y) env
 eval1 (TmLet x typ (TmReadTTLFile s),env,k,r,p) = (TmLet (str x) typ e',env,k,r,p)
-                    where e' = getValueBinding ("VAR" ++ ((str s) \\ ".ttl")) env
+                    where e' = getValueBinding ("FILE" ++ ((str s) \\ ".ttl")) env
 eval1 (TmLet x typ e,env,k,r,p) | isValue e = (e,update env (str x) e,k,r,p)
 
 
 
 -- Evaluation rules for Clear blocks
 eval1 (TmClear x typ,env,k,r,p) = (TmString ("clear " ++ str x),clear env x,k,r,p)
+eval1 (TmClearAll,env,k,r,p) = (TmString ("ClearAll excpet pre-load file"),clearAll env,k,r,p)
 
 -- Rule for read file evaluations Read a pre-stored file string
-eval1 (TmReadTTLFile s,env,k,r,p) = (TmVar ("VAR" ++ ((str s) \\ ".ttl")),env,k,r,p)
+eval1 (TmReadTTLFile s,env,k,r,p) = (TmVar ("FILE" ++ ((str s) \\ ".ttl")),env,k,r,p)
 
 
 -- Evaluation rules for plus number operator
@@ -130,7 +133,7 @@ eval1 (e,env,k,r,p) = error "Evaluation Error"
 
 -- Function to iterate the small step reduction to termination
 evalLoop :: String -> String -> Expr -> [Expr]
-evalLoop bar foo e = eval (e,[("VARbar",TmString bar),("VARfoo",TmString foo)],[],[],[])
+evalLoop bar foo e = eval (e,[("FILEbar",TmString bar),("FILEfoo",TmString foo)],[],[],[])
 
 
 eval :: (Expr, Environment, Kontinuation, Result, Processing) -> [Expr]
@@ -156,9 +159,6 @@ str s = s \\ ['\"','\"']
 
 getVarFromFile :: String -> Environment -> Environment
 getVarFromFile s env = env ++ varBase (socToList s) ++ varPrefix (socToList s) ++ varPrefixBroken (socToList s)
---只能检测字符串TODO：其他格式抛出错误
-listEnv :: Environment -> String
-listEnv env = unlines [ s ++ unparse e | (s,e) <- env]
 
 --TODO：此处未检测是否为空,即默认输入的ttl有@base
 varBase :: [String] -> Environment
@@ -170,11 +170,6 @@ varPrefix :: [String] -> Environment
 varPrefix l = [ procPre (s \\ "@prefix") " "  | s <- l,  eqString s "@prefix" && isInfixOf "http://" s]
 varPrefixBroken :: [String] -> Environment
 varPrefixBroken l = [ procPre (s \\ "@prefix") (varBaseStr l) | s <- l,  eqString s "@prefix" && not (isInfixOf "http://" s)]
-
---将String转为List
-socToList :: String -> [String]
-socToList = wordsWhen (=='\n')
-
 procPre :: String -> String -> (String , Expr)
 procPre s a = (filter (\x -> x /= ' ' && x /= ':') (head (wordsWhen (=='<') s)),
                if a /= " " then TmString ((a \\ ">") ++ (filter  (\x -> x /= ' ' && x /= '.' ) ((wordsWhen (=='<') s !! 1))))
@@ -184,6 +179,14 @@ procPre s a = (filter (\x -> x /= ' ' && x /= ':') (head (wordsWhen (=='<') s)),
 {-
 -tools and check function
 -}
+
+--只能检测字符串TODO：其他格式抛出错误
+listEnv :: Environment -> String
+listEnv env = unlines [ s ++ unparse e | (s,e) <- env]
+
+--将String转为List
+socToList :: String -> [String]
+socToList = wordsWhen (=='\n')
 
 repl :: Char -> Char
 repl '<' = ' '
