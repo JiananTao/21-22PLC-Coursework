@@ -36,11 +36,14 @@ import StqlTokens
     ';'    { TokenEnd _}
     path             {TokenFilePath _ $$}
     READFILE         {TokenReadFile _ }
+    GETVAR           {TokenGetVar _ }
+    READENV          { TokenReadEnv _ }
 
 %left ';'
 %left arr
 %right let
 %right clear
+%right READFILE
 %right '='
 %nonassoc if
 %nonassoc then
@@ -72,7 +75,9 @@ Exp : int                                       { TmInt $1 }
     | '(' Exp ')'                               { $2 }
     | Exp ';' Exp                               { TmEnd $3 $1}
     | Exp ';'                                   { TmEnd2 $1 }
-    | READFILE path        {TmReadTTLFile $2}
+    | READFILE path                             { TmReadTTLFile $2 }
+    | GETVAR var                                { TmGetVar $2 }
+    | READENV                                   { TmReadEnv }
 
 
 Type : Bool                     { TyBool } 
@@ -99,6 +104,7 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmFst Expr | TmSnd Expr | TmAddString Expr Expr
             | TmIf Expr Expr Expr | TmLet String StqlType Expr
             | TmSplit String Expr
+            | TmGetVar String | TmReadEnv 
             | TmClear String StqlType
             | TmEnd Expr Expr | TmEnd2 Expr
             | TmReadTTLFile String

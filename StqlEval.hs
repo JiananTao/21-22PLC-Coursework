@@ -111,8 +111,15 @@ eval1 (TmIf e1 e2 e3,env,k,r,p) = (e1,env,HIf e2 e3 env:k,r,p)
 eval1 (TmTrue,env1,(HIf e2 e3 env2):k,r,p) = (e2,env2 ++ env1,k,r,p)
 eval1 (TmFalse,env1,(HIf e2 e3 env2):k,r,p) = (e3,env2 ++ env1,k,r,p)
 
+-- Evaluation rules for Let blocks
+eval1 (TmGetVar s,env,k,r,p) = (TmString "已导入var",env',k,r,p)
+                           where env' = getVarFromFile (unparse (getValueBinding (str s) env)) env
+
+eval1 (TmReadEnv, env,k,r,p) = (TmString (listEnv env),env,k,r,p)
 -- Rule for runtime errors
 eval1 (e,env,k,r,p) = error "Evaluation Error"
+
+
 
 -- Function to iterate the small step reduction to termination
 evalLoop :: String -> String -> Expr -> [Expr]
@@ -139,4 +146,58 @@ getResult = map unparse
 
 str :: String -> String
 str s = s \\ ['\"','\"']
+
+getVarFromFile :: String -> Environment -> Environment
+getVarFromFile s env = env ++ varBase (socToList s) ++ varPrefix (socToList s) ++ varPrefixBroken (socToList s)
+--只能检测字符串TODO：其他格式抛出错误
+listEnv :: Environment -> String 
+listEnv env = unlines [ s ++ unparse e | (s,e) <- env]
+--type Environment = [ (String,Expr) ]
+--finalSoc :: String -> [Char]
+--finalSoc soc = unlines (allL (socToList soc)) ++ show (cFom soc)
+--nors :: [String] -> [String]
+--nors l = [ x | x <- l, not (eqString x "@base") && not (eqString x "@prefix")]
+
+varBase :: [String] -> Environment
+varBase l = [  ("BaseVar",TmString (filter  (\x -> x /= ' ' && x /= '.') (s \\ "@base"))) | s <- l, eqString s "@base"]
+varPrefix :: [String] -> Environment
+varPrefix l = [ procPre (s \\ "@prefix") | s <- l,  eqString s "@prefix" && isInfixOf "http://" s]
+varPrefixBroken :: [String] -> Environment
+varPrefixBroken l = [ procPre (s \\ "@prefix") | s <- l,  eqString s "@prefix" && not (isInfixOf "http://" s)]
+
+--将String转为List
+socToList :: String -> [String]
+socToList = wordsWhen (=='\n')
+--socToList' :: String -> Environment -> [(String, Environment)]
+--socToList' s env = [(l,env) | l <- socToList s]
+
+procPre :: String -> (String , Expr)
+procPre s = (filter (\x -> x /= ' ' && x /= ':') (head (wordsWhen (=='<') s)), TmString (filter  (\x -> x /= ' ' && x /= '.') ("<" ++ (wordsWhen (=='<') s !! 1))))
+{-
+-tools and check function
+-}
+
+repl :: Char -> Char
+repl '<' = ' '
+repl  c  = c
+
+
+--Check the format
+cFom :: String -> Int
+cFom str = length (filter (== '<') str) - length (filter (== '>') str)
+
+--print $ wordsWhen (=='.') "get.ttl.split"
+wordsWhen     :: (Char -> Bool) -> String -> [String]
+wordsWhen p s =  case dropWhile p s of
+                      "" -> []
+                      s' -> w : wordsWhen p s''
+                            where (w, s'') = break p s'
+
+
+--check if it is global vars
+--eqString "@base <http://www.cw.org/> ." "@base"
+eqString :: String -> String -> Bool
+eqString (c1:cs1) (c2:cs2) = c1 == c2 && cs1 `eqString` cs2
+eqString _        []       = True
+eqString _        _        = False
 

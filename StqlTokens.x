@@ -39,6 +39,8 @@ $white+       ;
   [$alpha $digit \_ \']*.ttl    { tok (\p s -> TokenFilePath p s) }
   \;             { tok (\p s -> TokenEnd p) }
   READFILE       { tok (\p s -> TokenReadFile p) }
+  GETVAR         { tok (\p s -> TokenGetVar p) }
+  READENV        { tok (\p s -> TokenReadEnv p) }
   $alpha [$alpha $digit \_ \’]*      { tok (\p s -> TokenVar p s) }
   \"$alpha [$alpha $digit \_ \’]*\"  { tok (\p s -> TokenString p s) }
 
@@ -79,8 +81,10 @@ data StqlToken =
   TokenComma AlexPosn            | 
   TokenVar AlexPosn String       |
   TokenReadFile AlexPosn         |
+  TokenGetVar AlexPosn           |
   TokenFilePath AlexPosn String  |
-  TokenEnd AlexPosn
+  TokenEnd AlexPosn              |
+  TokenReadEnv AlexPosn
   deriving (Eq,Show) 
 
 tokenPosn :: StqlToken -> String
@@ -102,6 +106,7 @@ tokenPosn (TokenFst (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenSnd (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenHasType (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenLet (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenGetVar (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenSplit (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenWhen (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenClear (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
@@ -111,6 +116,7 @@ tokenPosn (TokenRParen (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenComma (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenVar (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenEnd (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenReadEnv (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenReadFile (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenFilePath (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 }
