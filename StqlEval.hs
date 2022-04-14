@@ -150,29 +150,30 @@ str s = s \\ ['\"','\"']
 getVarFromFile :: String -> Environment -> Environment
 getVarFromFile s env = env ++ varBase (socToList s) ++ varPrefix (socToList s) ++ varPrefixBroken (socToList s)
 --只能检测字符串TODO：其他格式抛出错误
-listEnv :: Environment -> String 
+listEnv :: Environment -> String
 listEnv env = unlines [ s ++ unparse e | (s,e) <- env]
---type Environment = [ (String,Expr) ]
---finalSoc :: String -> [Char]
---finalSoc soc = unlines (allL (socToList soc)) ++ show (cFom soc)
---nors :: [String] -> [String]
---nors l = [ x | x <- l, not (eqString x "@base") && not (eqString x "@prefix")]
 
+--TODO：此处未检测是否为空,即默认输入的ttl有@base
 varBase :: [String] -> Environment
-varBase l = [  ("BaseVar",TmString (filter  (\x -> x /= ' ' && x /= '.') (s \\ "@base"))) | s <- l, eqString s "@base"]
+varBase l = [("BaseVar",TmString (varBaseStr l))]
+varBaseStr :: [String] -> String 
+varBaseStr l = head [ filter  (\x -> x /= ' ' && x /= '.' ) (s \\ "@base") | s <- l, eqString s "@base"]
+
 varPrefix :: [String] -> Environment
-varPrefix l = [ procPre (s \\ "@prefix") | s <- l,  eqString s "@prefix" && isInfixOf "http://" s]
+varPrefix l = [ procPre (s \\ "@prefix") " "  | s <- l,  eqString s "@prefix" && isInfixOf "http://" s]
 varPrefixBroken :: [String] -> Environment
-varPrefixBroken l = [ procPre (s \\ "@prefix") | s <- l,  eqString s "@prefix" && not (isInfixOf "http://" s)]
+varPrefixBroken l = [ procPre (s \\ "@prefix") (varBaseStr l) | s <- l,  eqString s "@prefix" && not (isInfixOf "http://" s)]
 
 --将String转为List
 socToList :: String -> [String]
 socToList = wordsWhen (=='\n')
---socToList' :: String -> Environment -> [(String, Environment)]
---socToList' s env = [(l,env) | l <- socToList s]
 
-procPre :: String -> (String , Expr)
-procPre s = (filter (\x -> x /= ' ' && x /= ':') (head (wordsWhen (=='<') s)), TmString (filter  (\x -> x /= ' ' && x /= '.') ("<" ++ (wordsWhen (=='<') s !! 1))))
+procPre :: String -> String -> (String , Expr)
+procPre s a = (filter (\x -> x /= ' ' && x /= ':') (head (wordsWhen (=='<') s)),
+               if a /= " " then TmString ((a \\ ">") ++ (filter  (\x -> x /= ' ' && x /= '.' ) ((wordsWhen (=='<') s !! 1))))
+               else TmString (filter  (\x -> x /= ' ' && x /= '.') ("<" ++ (wordsWhen (=='<') s !! 1))))
+
+
 {-
 -tools and check function
 -}
