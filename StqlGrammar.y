@@ -38,6 +38,7 @@ import StqlTokens
     ReadFile         {TokenReadFile _ }
     GetVars           {TokenGetVar _ }
     ReadEnv          { TokenReadEnv _ }
+    FillPrefix       { TokenFillPrefix _ }
 
 %left ';'
 %left arr
@@ -79,8 +80,9 @@ Exp : int                                       { TmInt $1 }
     | Exp ';'                                   { TmEnd2 $1 }
     | Print Exp                                 { TmPrint $2 }
     | ReadFile path                             { TmReadTTLFile $2 }
-    | GetVars var                                { TmGetVar $2 }
+    | GetVars var                               { TmGetVar $2 }
     | ReadEnv                                   { TmReadEnv }
+    | FillPrefix var                            { TmFillPrefix $2}
 
 
 Type : Bool                     { TyBool } 
@@ -108,6 +110,7 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmIf Expr Expr Expr | TmLet String StqlType Expr
             | TmPrint Expr
             | TmGetVar String | TmReadEnv 
+            | TmFillPrefix String 
             | TmClear String StqlType | TmClearAll
             | TmEnd Expr Expr | TmEnd2 Expr
             | TmReadTTLFile String

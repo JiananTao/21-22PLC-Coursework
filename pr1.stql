@@ -1,0 +1,12 @@
+--./Stql pr1.stql
+
+Let (bar:String) = (ReadFile bar.ttl);
+GetVars bar;
+Print p;
+
+ClearAll;
+
+Let (foo:String) = (ReadFile foo.ttl);
+GetVars foo;
+Print p;
+

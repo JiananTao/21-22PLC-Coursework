@@ -2,7 +2,12 @@
 -- Provides a CEK implementation of the \Stql language from the lecture notes
 module StqlEval where
 import StqlGrammar
-import Data.List
+import Data.List ( isInfixOf, (\\), elemIndices, intercalate )
+import Data.Char ( isSpace )
+import GHC.OldList (elemIndex)
+import Data.Maybe (isNothing)
+import Data.List (isPrefixOf)
+
 
 {-
 data StqlType = TyInt | TyString | TyBool | TyUnit | TyPair StqlType StqlType | TyFun StqlType StqlType
@@ -27,7 +32,7 @@ data Frame =
            HAdd Expr Environment | AddH Expr
            | HPlus Expr Environment | PlusH Expr
            | HPair Expr Environment | PairH Expr
-           | FstH | SndH | Print 
+           | FstH | SndH | Print
            | HIf Expr Expr Environment
            | Processing Expr
 type Kontinuation = [ Frame ]
@@ -125,9 +130,12 @@ eval1 (TmFalse,env1,(HIf e2 e3 env2):k,r,p) = (e3,env2 ++ env1,k,r,p)
 
 -- Evaluation rules for Let blocks
 eval1 (TmGetVar s,env,k,r,p) = (TmString "已导入var",env',k,r,p)
-                           where env' = getVarFromFile (unparse (getValueBinding (str s) env)) env
+                           where env' = getVarFromFile (varStr s env) env
 
 eval1 (TmReadEnv, env,k,r,p) = (TmString (listEnv env),env,k,r,p)
+
+eval1 (TmFillPrefix s, env,k,r,p) = (TmString s',env,k,r,p)
+                           where s' = procFill (unlines (getNeedFill (socToList (varStr s env)))) env ""
 -- Rule for runtime errors
 eval1 (e,env,k,r,p) = error "Evaluation Error"
 
@@ -156,8 +164,32 @@ unparseAll :: [Expr] -> [String]
 unparseAll = map unparse
 
 {-------------------------------------------------------------------------------------------
+--*必须提前运行GetVars函数，将文件中的参数填入
+--这些是为了获得填充ttl文件不全的方法
+--
+--
+-}
+--适用于FillPrefix函数, 例: p:subjectC
+--s 为一整个文件的字符串, 通过在
+getNeedFill :: [String] -> [String]
+getNeedFill l = [ s | s <- l, not ("http://" `isInfixOf` s) && isInfixOf ":" s && not ("@" `isInfixOf` s)]
+procFill :: [Char] -> Environment -> String -> String
+procFill s env sum | isNothing (elemIndex ':' (s \\ ":"))  = (init $ init $ init (replace ".>" ">.\n" (filter (/=' ') (sum ++ beFill i i' s env)))) ++ ">."
+                   | otherwise  = procFill s' env (sum ++ beFill i i' s env)
+                where
+                  s' = drop (rmMaybe i') s
+                  i  = elemIndex ':' s
+                  i' = elemIndex ':' (s \\ ":")
+beFill :: Maybe Int -> Maybe Int -> String -> Environment -> String
+beFill (Just 1) (Just i') s env = let s' = take (i'-1) s in (varStr ((s !! 0):"") env \\ ">") ++ drop 2 s' ++ ">"
+beFill (Just i) (Just i') s env = let s' = take (i'-1) s in (varStr ((s !! (i-1)):"") env \\ ">") ++ drop (i + 1) s'
+beFill (Just i) Nothing s env  = (varStr ((s !! (i-1)):"") env \\ ">") ++ drop (i+1) s
+beFill _ _ s env = error "FillPrefix函数出错"
+
+--take (i-2) s ++ 
+{-------------------------------------------------------------------------------------------
 --这些是为了获得文件里变量的方法
---适用于GETVAR函数
+--适用于GetVars函数
 --
 --
 --}
@@ -166,7 +198,7 @@ getVarFromFile s env = env ++ varBase (socToList s) ++ varPrefix (socToList s) +
 --TODO：此处未检测是否为空,即默认输入的ttl有@base
 varBase :: [String] -> Environment
 varBase l = [("BaseVar",TmString (varBaseStr l))]
-varBaseStr :: [String] -> String 
+varBaseStr :: [String] -> String
 varBaseStr l = head [ init (filter  (\x -> x /= ' ') (s \\ "@base")) | s <- l, eqString s "@base"]
 varPrefix :: [String] -> Environment
 varPrefix l = [ procPre (s \\ "@prefix") " "  | s <- l,  eqString s "@prefix" && isInfixOf "http://" s]
@@ -199,6 +231,16 @@ clearAll env = [ (y,e2) | (y,e2) <- env, y == "FILEfoo" || y == "FILEbar" ]
 --
 --
 -}
+
+
+
+
+rmMaybe :: Maybe a -> a
+rmMaybe (Just a) = a
+rmMaybe Nothing = error "强制去除Maybe错误"
+varStr :: String -> Environment -> String
+varStr s env = unparse (getValueBinding (str s) env)
+
 --去除2个“符号,防止引入的String带有“
 str :: String -> String
 str s = s \\ ['\"','\"']
@@ -220,4 +262,33 @@ eqString :: String -> String -> Bool
 eqString (c1:cs1) (c2:cs2) = c1 == c2 && cs1 `eqString` cs2
 eqString _        []       = True
 eqString _        _        = False
+
+{-
+--The following is from the external missingH package
+--import Data.List.Utils
+--https://hackage.haskell.org/package/MissingH-1.5.0.1/docs/src/Data.List.Utils.html#startswith
+--
+-}
+replace :: Eq a => [a] -> [a] -> [a] -> [a]
+replace old new l = intercalate new . split old $ l
+spanList :: ([a] -> Bool) -> [a] -> ([a], [a])
+spanList _ [] = ([],[])
+spanList func list@(x:xs) =
+    if func list
+       then (x:ys,zs)
+       else ([],list)
+    where (ys,zs) = spanList func xs
+breakList :: ([a] -> Bool) -> [a] -> ([a], [a])
+breakList func = spanList (not . func)
+split :: Eq a => [a] -> [a] -> [[a]]
+split _ [] = []
+split delim str =
+    let (firstline, remainder) = breakList (isPrefixOf delim) str
+        in
+        firstline : case remainder of
+                                   [] -> []
+                                   x -> if x == delim
+                                        then [] : []
+                                        else split delim
+                                                 (drop (length delim) x)
 
