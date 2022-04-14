@@ -19,12 +19,12 @@ import StqlTokens
     '++'   { TokenPlusString _ }
     '+'    { TokenPlus _ }
     var    { TokenVar _ $$ }
-    if     { TokenIf _ }
-    then   { TokenThen _ }
-    else   { TokenElse _ }
+    If     { TokenIf _ }
+    Then   { TokenThen _ }
+    Else   { TokenElse _ }
     fst    { TokenFst _ }
     snd    { TokenSnd _ }
-    let    { TokenLet _ }
+    Let    { TokenLet _ }
     Print  { TokenPrint _ }
     Clear  { TokenClear _ }
     ClearAll  { TokenClearAll _ }
@@ -35,21 +35,21 @@ import StqlTokens
     ','    { TokenComma _ }
     ';'    { TokenEnd _}
     path             {TokenFilePath _ $$}
-    READFILE         {TokenReadFile _ }
-    GETVAR           {TokenGetVar _ }
-    READENV          { TokenReadEnv _ }
+    ReadFile         {TokenReadFile _ }
+    GetVars           {TokenGetVar _ }
+    ReadEnv          { TokenReadEnv _ }
 
 %left ';'
 %left arr
-%right let
+%right Let
 %right ClearAll
 %right Clear
-%right READFILE
+%right ReadFile
 %right Print
 %right '='
-%nonassoc if
-%nonassoc then
-%nonassoc else
+%nonassoc If
+%nonassoc Then
+%nonassoc Else
 %left fst snd
 %left '+'
 %left '++'
@@ -70,17 +70,17 @@ Exp : int                                       { TmInt $1 }
     | Exp '+' Exp                               { TmAdd $1 $3 }
     | fst Exp                                   { TmFst $2 }
     | snd Exp                                   { TmSnd $2 }
-    | if Exp then Exp else Exp                  { TmIf $2 $4 $6 } 
-    | let '(' var ':' Type ')' '=' Exp          { TmLet $3 $5 $8 }
+    | If Exp Then Exp Else Exp                  { TmIf $2 $4 $6 } 
+    | Let '(' var ':' Type ')' '=' Exp          { TmLet $3 $5 $8 }
     | Clear '(' var ':' Type ')'                { TmClear $3 $5 }
     | ClearAll               { TmClearAll }
     | '(' Exp ')'                               { $2 }
     | Exp ';' Exp                               { TmEnd $3 $1}
     | Exp ';'                                   { TmEnd2 $1 }
     | Print Exp                                 { TmPrint $2 }
-    | READFILE path                             { TmReadTTLFile $2 }
-    | GETVAR var                                { TmGetVar $2 }
-    | READENV                                   { TmReadEnv }
+    | ReadFile path                             { TmReadTTLFile $2 }
+    | GetVars var                                { TmGetVar $2 }
+    | ReadEnv                                   { TmReadEnv }
 
 
 Type : Bool                     { TyBool } 

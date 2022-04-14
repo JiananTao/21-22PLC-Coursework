@@ -19,7 +19,7 @@ main' = do (fileName : _ ) <- getArgs
            putStrLn ("Tokens as " ++ show resultAlex ++ "\n")
            let parsedProg = parseCalc resultAlex
            putStrLn ("Parsed as " ++ show parsedProg ++ "\n")
-           let result = unlines $ reverse (getResult (evalLoop sourceBar sourceFoo parsedProg))
+           let result = unlines $ reverse (unparseAll (evalLoop sourceBar sourceFoo parsedProg))
            putStrLn ("Result as \n" ++ result)
            writeFile "out.ttl" result
 noParse :: ErrorCall -> IO ()
