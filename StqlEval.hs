@@ -221,3 +221,4 @@ eqString (c1:cs1) (c2:cs2) = c1 == c2 && cs1 `eqString` cs2
 eqString _        []       = True
 eqString _        _        = False
 
+--check
