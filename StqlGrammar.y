@@ -26,7 +26,8 @@ import StqlTokens
     snd    { TokenSnd _ }
     let    { TokenLet _ }
     Print  { TokenPrint _ }
-    clear  { TokenClear _ }
+    Clear  { TokenClear _ }
+    ClearAll  { TokenClearAll _ }
     ':'    { TokenHasType _}
     '='    { TokenEq _ }
     '('    { TokenLParen _ } 
@@ -41,7 +42,8 @@ import StqlTokens
 %left ';'
 %left arr
 %right let
-%right clear
+%right ClearAll
+%right Clear
 %right READFILE
 %right Print
 %right '='
@@ -70,7 +72,8 @@ Exp : int                                       { TmInt $1 }
     | snd Exp                                   { TmSnd $2 }
     | if Exp then Exp else Exp                  { TmIf $2 $4 $6 } 
     | let '(' var ':' Type ')' '=' Exp          { TmLet $3 $5 $8 }
-    | clear '(' var ':' Type ')'                { TmClear $3 $5 }
+    | Clear '(' var ':' Type ')'                { TmClear $3 $5 }
+    | ClearAll               { TmClearAll }
     | '(' Exp ')'                               { $2 }
     | Exp ';' Exp                               { TmEnd $3 $1}
     | Exp ';'                                   { TmEnd2 $1 }
@@ -105,7 +108,7 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmIf Expr Expr Expr | TmLet String StqlType Expr
             | TmPrint Expr
             | TmGetVar String | TmReadEnv 
-            | TmClear String StqlType
+            | TmClear String StqlType | TmClearAll
             | TmEnd Expr Expr | TmEnd2 Expr
             | TmReadTTLFile String
     deriving (Show,Eq)

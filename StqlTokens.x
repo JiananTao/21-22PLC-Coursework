@@ -29,7 +29,8 @@ $white+       ;
   snd            { tok (\p s -> TokenSnd p) }
   \\             { tok (\p s -> TokenLambda p) }
   \:             { tok (\p s -> TokenHasType p) }
-  clear          { tok (\p s -> TokenClear p )}
+  ClearAll       { tok (\p s -> TokenClearAll p )}
+  Clear          { tok (\p s -> TokenClear p )}
   let            { tok (\p s -> TokenLet p )}
   =              { tok (\p s -> TokenEq p )}
   \(             { tok (\p s -> TokenLParen p) }
@@ -73,6 +74,7 @@ data StqlToken =
   TokenLet AlexPosn              |
   TokenPrint AlexPosn            |
   TokenClear AlexPosn            |
+  TokenClearAll AlexPosn            |
   TokenEq AlexPosn               |
   TokenLParen AlexPosn           |
   TokenRParen AlexPosn           |
@@ -107,6 +109,7 @@ tokenPosn (TokenLet (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenGetVar (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenPrint (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenClear (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenClearAll (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenEq  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenLParen (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenRParen (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
