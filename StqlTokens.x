@@ -22,25 +22,25 @@ $white+       ;
   false          { tok (\p s -> TokenFalse p) }
   "++"           { tok (\p s -> TokenPlusString p) }
   \+             { tok (\p s -> TokenPlus p) }
-  if             { tok (\p s -> TokenIf p) }
-  then           { tok (\p s -> TokenThen p) }
-  else           { tok (\p s -> TokenElse p) }
+  If             { tok (\p s -> TokenIf p) }
+  Then           { tok (\p s -> TokenThen p) }
+  Else           { tok (\p s -> TokenElse p) }
   fst            { tok (\p s -> TokenFst p) }
   snd            { tok (\p s -> TokenSnd p) }
   \\             { tok (\p s -> TokenLambda p) }
   \:             { tok (\p s -> TokenHasType p) }
   ClearAll       { tok (\p s -> TokenClearAll p )}
   Clear          { tok (\p s -> TokenClear p )}
-  let            { tok (\p s -> TokenLet p )}
+  Let            { tok (\p s -> TokenLet p )}
   =              { tok (\p s -> TokenEq p )}
   \(             { tok (\p s -> TokenLParen p) }
   \)             { tok (\p s -> TokenRParen p) }
   [$alpha $digit \_ \']*.ttl    { tok (\p s -> TokenFilePath p s) }
   \;             { tok (\p s -> TokenEnd p) }
   Print          { tok (\p s -> TokenPrint p )}
-  READFILE       { tok (\p s -> TokenReadFile p) }
-  GETVAR         { tok (\p s -> TokenGetVar p) }
-  READENV        { tok (\p s -> TokenReadEnv p) }
+  ReadFile       { tok (\p s -> TokenReadFile p) }
+  GetVars         { tok (\p s -> TokenGetVar p) }
+  ReadEnv        { tok (\p s -> TokenReadEnv p) }
   $alpha [$alpha $digit \_ \’]*      { tok (\p s -> TokenVar p s) }
   \"$alpha [$alpha $digit \_ \’]*\"  { tok (\p s -> TokenString p s) }
 

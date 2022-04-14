@@ -16,7 +16,7 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmIf Expr Expr Expr | TmLet String StqlType Expr
             | TmPrint Expr
             | TmGetVar String | TmReadEnv 
-            | TmClear String StqlType
+            | TmClear String StqlType | TmClearAll
             | TmEnd Expr Expr | TmEnd2 Expr
             | TmReadTTLFile String
     deriving (Show,Eq)
@@ -35,6 +35,11 @@ type Result = [Expr]
 type Processing = [Frame]
 type State = (Expr,Environment,Kontinuation,Result,Processing)
 
+{-这些与环境变量交互，以及是否有值可供输出有关
+--
+--
+--
+-}
 -- Look up a value in an environment and unpack it
 getValueBinding :: String -> Environment -> Expr
 getValueBinding x [] = error "Variable binding not found"
@@ -43,11 +48,6 @@ getValueBinding x ((y,e):env) | x == y    = e
 
 update :: Environment -> String -> Expr -> Environment
 update env x e1 = (x,e1) : [ (y,e2) | (y,e2) <- env, x /= y ]
-
-clear :: Environment -> String -> Environment
-clear env x = [ (y,e2) | (y,e2) <- env, x /= y ]
-clearAll :: Environment -> Environment
-clearAll env = [ (y,e2) | (y,e2) <- env, y == "FILEfoo" || y == "FILEbar" ]
 -- Checks for terminated expressions
 isValue :: Expr -> Bool
 isValue (TmString _) = True
@@ -58,6 +58,11 @@ isValue TmUnit = True
 isValue (TmPair e1 e2) = isValue e1 && isValue e2
 isValue _ = False
 
+{-
+--eval1是主要函数，用于模式匹配各个语法，并做出对应处理
+--
+--
+-}
 --Small step evaluation function
 eval1 :: State -> State
 eval1 (TmVar x,env,k,r,p) = (e',env,k,r,p)
@@ -70,8 +75,6 @@ eval1 (v,env,[],r,(Processing e):p) | isValue v = (e,env,[],r,p)
 eval1 (v,env,Print:k,r,p) | isValue v = (v,env,[],v:r,p)
 --TODO:未考虑v不是value的情况
 eval1 (v,env,Print:k,r,(Processing e):p) | isValue v = (e,env,[],v:r,p)
-
-
 
 -- Rule for Print
 eval1 (TmPrint e,env,k,r,p) = (e,env,k ++ [Print] ,r,p)
@@ -87,15 +90,12 @@ eval1 (TmLet x typ (TmReadTTLFile s),env,k,r,p) = (TmLet (str x) typ e',env,k,r,
                     where e' = getValueBinding ("FILE" ++ ((str s) \\ ".ttl")) env
 eval1 (TmLet x typ e,env,k,r,p) | isValue e = (e,update env (str x) e,k,r,p)
 
-
-
 -- Evaluation rules for Clear blocks
 eval1 (TmClear x typ,env,k,r,p) = (TmString ("clear " ++ str x),clear env x,k,r,p)
 eval1 (TmClearAll,env,k,r,p) = (TmString ("ClearAll excpet pre-load file"),clearAll env,k,r,p)
 
 -- Rule for read file evaluations Read a pre-stored file string
 eval1 (TmReadTTLFile s,env,k,r,p) = (TmVar ("FILE" ++ ((str s) \\ ".ttl")),env,k,r,p)
-
 
 -- Evaluation rules for plus number operator
 eval1 (TmAdd e1 e2,env,k,r,p) = (e1,env,HAdd e2 env:k,r,p)
@@ -131,17 +131,19 @@ eval1 (TmReadEnv, env,k,r,p) = (TmString (listEnv env),env,k,r,p)
 -- Rule for runtime errors
 eval1 (e,env,k,r,p) = error "Evaluation Error"
 
--- Function to iterate the small step reduction to termination
+{-------------------------------------------------------------------------------------------
+--这些是函数主程序
+--负责与Stql.hs中的main方法对接
+--
+-}
+--Function to iterate the small step reduction to termination
 evalLoop :: String -> String -> Expr -> [Expr]
 evalLoop bar foo e = eval (e,[("FILEbar",TmString bar),("FILEfoo",TmString foo)],[],[],[])
-
-
 eval :: (Expr, Environment, Kontinuation, Result, Processing) -> [Expr]
 eval (e,env,k,r,p) | e' == e && isValue e' && null k && null p  = r'
                    | otherwise                                  = eval (e',env',k',r',p')
             where (e',env',k',r',p') = eval1 (e,env,k,r,p)
-
--- Function to unparse underlying values from the AST term
+--Function to unparse underlying values from the AST term
 unparse :: Expr -> String
 unparse (TmString n) = str n
 unparse (TmInt n) = show n
@@ -150,22 +152,22 @@ unparse TmFalse = "false"
 unparse TmUnit = "()"
 unparse (TmPair e1 e2) = "( " ++ unparse e1 ++ " , " ++ unparse e2 ++ " )"
 unparse _ = "Unknown"
+unparseAll :: [Expr] -> [String]
+unparseAll = map unparse
 
-getResult :: [Expr] -> [String]
-getResult = map unparse
-
-str :: String -> String
-str s = s \\ ['\"','\"']
-
+{-------------------------------------------------------------------------------------------
+--这些是为了获得文件里变量的方法
+--适用于GETVAR函数
+--
+--
+--}
 getVarFromFile :: String -> Environment -> Environment
 getVarFromFile s env = env ++ varBase (socToList s) ++ varPrefix (socToList s) ++ varPrefixBroken (socToList s)
-
 --TODO：此处未检测是否为空,即默认输入的ttl有@base
 varBase :: [String] -> Environment
 varBase l = [("BaseVar",TmString (varBaseStr l))]
 varBaseStr :: [String] -> String 
 varBaseStr l = head [ init (filter  (\x -> x /= ' ') (s \\ "@base")) | s <- l, eqString s "@base"]
-
 varPrefix :: [String] -> Environment
 varPrefix l = [ procPre (s \\ "@prefix") " "  | s <- l,  eqString s "@prefix" && isInfixOf "http://" s]
 varPrefixBroken :: [String] -> Environment
@@ -175,38 +177,45 @@ procPre s a = (filter (\x -> x /= ' ' && x /= ':') (head (wordsWhen (=='<') s)),
                if a /= " " then TmString ((a \\ ">") ++ (filter  (\x -> x /= ' ' && x /= '.' ) ((wordsWhen (=='<') s !! 1))))
                else TmString (init (filter  (\x -> x /= ' ') ("<" ++ (wordsWhen (=='<') s !! 1)))))
 
-
-{-
--tools and check function
+{------------------------------------------------------------------------------------------------
+--这些是部分简单语法用到的函数
+--
+--
 -}
-
---只能检测字符串TODO：其他格式抛出错误
+--用于ReadEnv语法
+--TODO：只能检测字符串，其他格式抛出错误
 listEnv :: Environment -> String
 listEnv env = unlines [ s ++ unparse e | (s,e) <- env]
+--用于Clear语法
+clear :: Environment -> String -> Environment
+clear env x = [ (y,e2) | (y,e2) <- env, x /= y ]
+--用于ClearAll语法
+clearAll :: Environment -> Environment
+clearAll env = [ (y,e2) | (y,e2) <- env, y == "FILEfoo" || y == "FILEbar" ]
 
+{-------------------------------------------------------------------------------------------
+--tools and check function
+--这些是用的通用小函数
+--
+--
+-}
+--去除2个“符号,防止引入的String带有“
+str :: String -> String
+str s = s \\ ['\"','\"']
 --将String转为List
 socToList :: String -> [String]
 socToList = wordsWhen (=='\n')
-
-repl :: Char -> Char
-repl '<' = ' '
-repl  c  = c
-
-
---Check the format
-cFom :: String -> Int
-cFom str = length (filter (== '<') str) - length (filter (== '>') str)
-
---print $ wordsWhen (=='.') "get.ttl.split"
+--例:print $ wordsWhen (=='.') "get.ttl.split"
 wordsWhen     :: (Char -> Bool) -> String -> [String]
 wordsWhen p s =  case dropWhile p s of
                       "" -> []
                       s' -> w : wordsWhen p s''
                             where (w, s'') = break p s'
-
-
---check if it is global vars
---eqString "@base <http://www.cw.org/> ." "@base"
+--Check the format
+cFom :: String -> Int
+cFom str = length (filter (== '<') str) - length (filter (== '>') str)
+--check if it is variables
+--例:eqString "@base <http://www.cw.org/> ." "@base"
 eqString :: String -> String -> Bool
 eqString (c1:cs1) (c2:cs2) = c1 == c2 && cs1 `eqString` cs2
 eqString _        []       = True
