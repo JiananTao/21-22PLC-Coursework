@@ -75,13 +75,13 @@ eval1 :: State -> State
 -- 只接受Var TmString相加
 eval1 (TmPlusASort e1 e2,env,k,r,p) = (e1,env,HPlus e2 env:k,r,p)
 eval1 (TmVar n,env1,(HPlus e env2):k,r,p) = (e,env2 ++ env1,PlusH e' : k,r,p)
-                                         where e' = getValueBinding (str n) env1
+                                         where e' = getValueBinding n env1
 eval1 (TmVar m,env,(PlusH (TmString n)):k,r,p) = (TmString (toListSort (unparse e' ++ "\n" ++ n)),env,k,r,p)
-                                         where e'  = getValueBinding (str m) env
+                                         where e'  = getValueBinding m env
 
 -- 获取变量
 eval1 (TmVar x,env,k,r,p) = (e',env,k,r,p)
-                    where e' = getValueBinding (str x) env
+                    where e' = getValueBinding x env
 
 -- Rule for terminated evaluations
 --eval1 (v,env,[],r,[]) | isValue v = (v,env,[],v:r,[])
@@ -101,30 +101,30 @@ eval1 (TmEnd e1 e2,env,k,r,p) = (e2,env,k,r,Processing e1:p)
 
 -- Evaluation rules for Let blocks
 -- TODO: 可优化
-eval1 (TmLet x typ (TmVar y),env,k,r,p) = (TmLet (str x) typ e',env,k,r,p)
-                    where e' = getValueBinding (str y) env
-eval1 (TmLet x typ (TmReadTTLFile s),env,k,r,p) = (TmLet (str x) typ e',env,k,r,p)
-                    where e' = getValueBinding ("FILE" ++ (str s \\ ".ttl")) env
-eval1 (TmLet x typ (TmFillPrefix s),env,k,r,p) = (TmLet (str x) typ (TmString e'),env,k,r,p)
+eval1 (TmLet x typ (TmVar y),env,k,r,p) = (TmLet x typ e',env,k,r,p)
+                    where e' = getValueBinding y env
+eval1 (TmLet x typ (TmReadTTLFile s),env,k,r,p) = (TmLet x typ e',env,k,r,p)
+                    where e' = getValueBinding ("FILE" ++ ( s \\ ".ttl")) env
+eval1 (TmLet x typ (TmFillPrefix s),env,k,r,p) = (TmLet x typ (TmString e'),env,k,r,p)
                     where e' = procFillPr (unlines (getNeedFillPr (socToList (varStr s env)))) env ""
-eval1 (TmLet x typ (TmFillBase s),env,k,r,p) = (TmLet (str x) typ (TmString e'),env,k,r,p)
+eval1 (TmLet x typ (TmFillBase s),env,k,r,p) = (TmLet x typ (TmString e'),env,k,r,p)
                     where e' = procFillBa (unlines (getNeedFillBa (socToList (varStr s env)))) env
-eval1 (TmLet x typ (TmReady s),env,k,r,p) = (TmLet (str x) typ (TmString e'),env,k,r,p)
+eval1 (TmLet x typ (TmReady s),env,k,r,p) = (TmLet x typ (TmString e'),env,k,r,p)
                     where e' = unlines (getNeedReady (socToList (varStr s env)))
-eval1 (TmLet x typ (TmProcSemic s),env,k,r,p) = (TmLet (str x) typ (TmString e'),env,k,r,p)
+eval1 (TmLet x typ (TmProcSemic s),env,k,r,p) = (TmLet x typ (TmString e'),env,k,r,p)
                     where e' = unlines ( procProcSemic (getNeedProcSemic (socToList (varStr s env)))
                                          ++ getNeedProcSemic' (socToList (varStr s env)))
-eval1 (TmLet x typ (TmProcComma s),env,k,r,p) = (TmLet (str x) typ (TmString e'),env,k,r,p)
+eval1 (TmLet x typ (TmProcComma s),env,k,r,p) = (TmLet x typ (TmString e'),env,k,r,p)
                     where e' = unlines ( procProcComma (getNeedProcComma (socToList (varStr s env)))
                                          ++ getNeedProcComma' (socToList (varStr s env)))
-eval1 (TmLet x typ e,env,k,r,p) | isValue e = (e,update env (str x) e,k,r,p)
+eval1 (TmLet x typ e,env,k,r,p) | isValue e = (e,update env x e,k,r,p)
 
 -- Evaluation rules for Clear blocks
-eval1 (TmClear x typ,env,k,r,p) = (TmString ("clear " ++ str x),clear env x,k,r,p)
+eval1 (TmClear x typ,env,k,r,p) = (TmString ("clear " ++ x),clear env x,k,r,p)
 eval1 (TmClearAll,env,k,r,p) = (TmString ("ClearAll excpet pre-load file"),clearAll env,k,r,p)
 
 -- Rule for read file evaluations Read a pre-stored file string
-eval1 (TmReadTTLFile s,env,k,r,p) = (TmVar ("FILE" ++ ((str s) \\ ".ttl")),env,k,r,p)
+eval1 (TmReadTTLFile s,env,k,r,p) = (TmVar ("FILE" ++ (s \\ ".ttl")),env,k,r,p)
 
 -- Evaluation rules for plus number operator
 eval1 (TmAdd e1 e2,env,k,r,p) = (e1,env,HAdd e2 env:k,r,p)
@@ -133,8 +133,8 @@ eval1 (TmInt m,env,(AddH (TmInt n)):k,r,p) = (TmInt (n + m),env,k,r,p)
 
 -- Evaluation rules for plus string operator
 eval1 (TmAddString e1 e2,env,k,r,p) = (e1,env,HPlus e2 env:k,r,p)
-eval1 (TmString n,env1,(HPlus e env2):k,r,p) = (e,env2 ++ env1,PlusH (TmString (str n)) : k,r,p)
-eval1 (TmString m,env,(PlusH (TmString n)):k,r,p) = (TmString (n ++ str m),env,k,r,p)
+eval1 (TmString n,env1,(HPlus e env2):k,r,p) = (e,env2 ++ env1,PlusH (TmString n) : k,r,p)
+eval1 (TmString m,env,(PlusH (TmString n)):k,r,p) = (TmString (n ++ m),env,k,r,p)
 
 -- Evaluation rules for projections
 eval1 (TmFst e1,env,k,r,p) = (e1,env, FstH : k,r,p)
@@ -187,7 +187,7 @@ eval (e,env,k,r,p) | e' == e && isValue e' && null k && null p  = r'
             where (e',env',k',r',p') = eval1 (e,env,k,r,p)
 --Function to unparse underlying values from the AST term
 unparse :: Expr -> String
-unparse (TmString n) = str n
+unparse (TmString n) =  n 
 unparse (TmInt n) = show n
 unparse TmTrue = "true"
 unparse TmFalse = "false"
@@ -227,16 +227,24 @@ procProcSemic' l = [ s | (s1,s2) <- l, let s = map (s1++) (split ";" s2)]
 getNeedReady :: [String] -> [String]
 getNeedReady l = [ s | s <- l, length (split "http://" s) == 4]
 --适用于FillBase函数, 例: <prob4B> <testPredA> <prob4C> .
+--例: <http://www.cw.org/#problem2> <testPredA> true .
 getNeedFillBa :: [String] -> [String]
-getNeedFillBa l = [ s | s <- l, not ("http://" `isInfixOf` s) && isInfixOf ">" s && not ("/>" `isInfixOf` s)]
+getNeedFillBa l = [ s | s <- l, (length (split "http://" s) <= 2) && (isInfixOf ">") s && (not ("/>" `isInfixOf` s))]
 procFillBa :: String -> Environment -> String
-procFillBa s env = filter (/=' ') (replace "<" (varStr "BaseVar" env \\ ">") s)
+procFillBa s env = filter (/=' ') (procFillBa' s env)
+procFillBa' :: String -> Environment -> String
+procFillBa' s env = concat [ r' | r <- split "<" s, let r' = case isInfixOf "http://" r of
+                                                                     True  -> "<" ++ r
+                                                                     _     -> case not (isInfixOf "http://" r) && (isInfixOf ">" r) of
+                                                                         True -> (varStr "BaseVar" env \\ ">") ++ r
+                                                                         False -> r]
+
 --适用于FillPrefix函数, 例: p:subjectC
 --s 为一整个文件的字符串, 通过在
 getNeedFillPr :: [String] -> [String]
 getNeedFillPr l = [ s | s <- l, not ("http://" `isInfixOf` s) && isInfixOf ":" s && not ("@" `isInfixOf` s)]
 procFillPr :: [Char] -> Environment -> String -> String
-procFillPr s env sum | isNothing (elemIndex ':' (s \\ ":"))  = (init $ init $ init (replace ".>" ">.\n" (filter (/=' ') (sum ++ beFill i i' s env)))) ++ ">."
+procFillPr s env sum | isNothing (elemIndex ':' (s \\ ":"))  = (init $ init (replace ".>" ">.\n" (filter (/=' ') (sum ++ beFill i i' s env)))) ++ ">."
                      | otherwise  = procFillPr s' env (sum ++ beFill i i' s env)
                 where
                   s' = drop (rmMaybe i') s
@@ -305,11 +313,10 @@ rmMaybe :: Maybe a -> a
 rmMaybe (Just a) = a
 rmMaybe Nothing = error "强制去除Maybe错误"
 varStr :: String -> Environment -> String
-varStr s env = unparse (getValueBinding (str s) env)
+varStr s env = unparse (getValueBinding s env)
 
---去除2个“符号,防止引入的String带有“
-str :: String -> String
-str s = s \\ ['\"','\"']
+--TODO: 去除2个“符号,防止引入的String带有“
+
 --将String转为List
 socToList :: String -> [String]
 socToList = wordsWhen (=='\n')
