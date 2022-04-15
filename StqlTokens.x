@@ -20,7 +20,8 @@ $white+       ;
   $digit+        { tok (\p s -> TokenInt p (read s)) }
   true           { tok (\p s -> TokenTrue p) }
   false          { tok (\p s -> TokenFalse p) }
-  "++"           { tok (\p s -> TokenPlusString p) }
+  "++"           { tok (\p s -> TokenPlusString p) }    
+--  PlusASort      { tok (\p s -> TokenPlusASort p )}      
   \+             { tok (\p s -> TokenPlus p) }
   If             { tok (\p s -> TokenIf p) }
   Then           { tok (\p s -> TokenThen p) }
@@ -42,6 +43,7 @@ $white+       ;
   GetVars         { tok (\p s -> TokenGetVar p) }
   ReadEnv        { tok (\p s -> TokenReadEnv p) }
   FillPrefix     { tok (\p s -> TokenFillPrefix p) }
+  FillBase       { tok (\p s -> TokenFillBase p) }
   $alpha [$alpha $digit \_ \’]*      { tok (\p s -> TokenVar p s) }
   \"$alpha [$alpha $digit \_ \’]*\"  { tok (\p s -> TokenString p s) }
 
@@ -75,7 +77,7 @@ data StqlToken =
   TokenLet AlexPosn              |
   TokenPrint AlexPosn            |
   TokenClear AlexPosn            |
-  TokenClearAll AlexPosn            |
+  TokenClearAll AlexPosn         |
   TokenEq AlexPosn               |
   TokenLParen AlexPosn           |
   TokenRParen AlexPosn           |
@@ -86,6 +88,7 @@ data StqlToken =
   TokenFilePath AlexPosn String  |
   TokenEnd AlexPosn              |
   TokenFillPrefix AlexPosn       |
+  TokenFillBase AlexPosn         |
   TokenReadEnv AlexPosn
   deriving (Eq,Show) 
 
@@ -120,6 +123,7 @@ tokenPosn (TokenVar (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenEnd (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenReadEnv (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenFillPrefix (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenFillBase (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenReadFile (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenFilePath (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 }

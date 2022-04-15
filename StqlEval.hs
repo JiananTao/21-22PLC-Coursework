@@ -93,6 +93,10 @@ eval1 (TmLet x typ (TmVar y),env,k,r,p) = (TmLet (str x) typ e',env,k,r,p)
                     where e' = getValueBinding (str y) env
 eval1 (TmLet x typ (TmReadTTLFile s),env,k,r,p) = (TmLet (str x) typ e',env,k,r,p)
                     where e' = getValueBinding ("FILE" ++ ((str s) \\ ".ttl")) env
+eval1 (TmLet x typ (TmFillPrefix s),env,k,r,p) = (TmLet (str x) typ (TmString e'),env,k,r,p)
+                    where e' = procFillPr (unlines (getNeedFillPr (socToList (varStr s env)))) env ""
+eval1 (TmLet x typ (TmFillBase s),env,k,r,p) = (TmLet (str x) typ (TmString e'),env,k,r,p)
+                    where e' = procFillBa (unlines (getNeedFillBa (socToList (varStr s env)))) env
 eval1 (TmLet x typ e,env,k,r,p) | isValue e = (e,update env (str x) e,k,r,p)
 
 -- Evaluation rules for Clear blocks
@@ -135,7 +139,9 @@ eval1 (TmGetVar s,env,k,r,p) = (TmString "已导入var",env',k,r,p)
 eval1 (TmReadEnv, env,k,r,p) = (TmString (listEnv env),env,k,r,p)
 
 eval1 (TmFillPrefix s, env,k,r,p) = (TmString s',env,k,r,p)
-                           where s' = procFill (unlines (getNeedFill (socToList (varStr s env)))) env ""
+                           where s' = procFillPr (unlines (getNeedFillPr (socToList (varStr s env)))) env ""
+eval1 (TmFillBase s, env,k,r,p) = (TmString s',env,k,r,p)
+                           where s' = procFillBa (unlines (getNeedFillBa (socToList (varStr s env)))) env
 -- Rule for runtime errors
 eval1 (e,env,k,r,p) = error "Evaluation Error"
 
@@ -169,13 +175,18 @@ unparseAll = map unparse
 --
 --
 -}
+--适用于FillBase函数, 例: <prob4B> <testPredA> <prob4C> .
+getNeedFillBa :: [String] -> [String]
+getNeedFillBa l = [ s | s <- l, not ("http://" `isInfixOf` s) && isInfixOf ">" s && not ("/>" `isInfixOf` s)]
+procFillBa :: String -> Environment -> String 
+procFillBa s env = filter (/=' ') (replace "<" (varStr "BaseVar" env \\ ">") s)
 --适用于FillPrefix函数, 例: p:subjectC
 --s 为一整个文件的字符串, 通过在
-getNeedFill :: [String] -> [String]
-getNeedFill l = [ s | s <- l, not ("http://" `isInfixOf` s) && isInfixOf ":" s && not ("@" `isInfixOf` s)]
-procFill :: [Char] -> Environment -> String -> String
-procFill s env sum | isNothing (elemIndex ':' (s \\ ":"))  = (init $ init $ init (replace ".>" ">.\n" (filter (/=' ') (sum ++ beFill i i' s env)))) ++ ">."
-                   | otherwise  = procFill s' env (sum ++ beFill i i' s env)
+getNeedFillPr :: [String] -> [String]
+getNeedFillPr l = [ s | s <- l, not ("http://" `isInfixOf` s) && isInfixOf ":" s && not ("@" `isInfixOf` s)]
+procFillPr :: [Char] -> Environment -> String -> String
+procFillPr s env sum | isNothing (elemIndex ':' (s \\ ":"))  = (init $ init $ init (replace ".>" ">.\n" (filter (/=' ') (sum ++ beFill i i' s env)))) ++ ">."
+                     | otherwise  = procFillPr s' env (sum ++ beFill i i' s env)
                 where
                   s' = drop (rmMaybe i') s
                   i  = elemIndex ':' s
@@ -186,7 +197,7 @@ beFill (Just i) (Just i') s env = let s' = take (i'-1) s in (varStr ((s !! (i-1)
 beFill (Just i) Nothing s env  = (varStr ((s !! (i-1)):"") env \\ ">") ++ drop (i+1) s
 beFill _ _ s env = error "FillPrefix函数出错"
 
---take (i-2) s ++ 
+
 {-------------------------------------------------------------------------------------------
 --这些是为了获得文件里变量的方法
 --适用于GetVars函数
@@ -232,9 +243,6 @@ clearAll env = [ (y,e2) | (y,e2) <- env, y == "FILEfoo" || y == "FILEbar" ]
 --
 -}
 
-
-
-
 rmMaybe :: Maybe a -> a
 rmMaybe (Just a) = a
 rmMaybe Nothing = error "强制去除Maybe错误"
@@ -269,6 +277,17 @@ eqString _        _        = False
 --https://hackage.haskell.org/package/MissingH-1.5.0.1/docs/src/Data.List.Utils.html#startswith
 --
 -}
+-------
+merge ::  (Ord a) => [a] -> [a] -> [a]
+merge = mergeBy (compare)
+mergeBy :: (a -> a -> Ordering) -> [a] -> [a] -> [a]
+mergeBy _   [] ys = ys
+mergeBy _   xs [] = xs
+mergeBy cmp (allx@(x:xs)) (ally@(y:ys))
+    | (x `cmp` y) <= EQ = x : mergeBy cmp xs ally
+    | otherwise = y : mergeBy cmp allx ys
+
+--------
 replace :: Eq a => [a] -> [a] -> [a] -> [a]
 replace old new l = intercalate new . split old $ l
 spanList :: ([a] -> Bool) -> [a] -> ([a], [a])
