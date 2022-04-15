@@ -217,7 +217,7 @@ procPre s a = (filter (\x -> x /= ' ' && x /= ':') (head (wordsWhen (=='<') s)),
 --用于ReadEnv语法
 --TODO：只能检测字符串，其他格式抛出错误
 listEnv :: Environment -> String
-listEnv env = unlines [ s ++ unparse e | (s,e) <- env]
+listEnv env = unlines [ s ++ "是" ++ unparse e | (s,e) <- env, s /= "FILEfoo" && s /= "FILEbar"]
 --用于Clear语法
 clear :: Environment -> String -> Environment
 clear env x = [ (y,e2) | (y,e2) <- env, x /= y ]
