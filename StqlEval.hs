@@ -37,7 +37,7 @@ data Frame =
            | HPair Expr Environment | PairH Expr
            | FstH | SndH | Print | Format
            | HIf Expr Expr Environment
-           | Processing Expr
+           | Processing Expr | HLet String StqlType
 type Kontinuation = [ Frame ]
 type Result = [Expr]
 type Processing = [Frame]
@@ -93,6 +93,7 @@ eval1 (v,env,[],r,(Processing e):p) | isValue v = (e,env,[],r,p)
 eval1 (v,env,Print:k,r,p) | isValue v = (v,env,[],v:r,p)
 --TODO:未考虑v不是value的情况
 eval1 (v,env,Print:k,r,(Processing e):p) | isValue v = (e,env,[],v:r,p)
+
 -- Rule for Print
 eval1 (TmPrint e,env,k,r,p) = (e,env,k ++ [Print] ,r,p)
 
@@ -101,24 +102,10 @@ eval1 (TmEnd2 e,env,k,r,p) = (e,env,k,r,p)
 eval1 (TmEnd e1 e2,env,k,r,p) = (e2,env,k,r,Processing e1:p)
 
 -- Evaluation rules for Let blocks
--- TODO: 可优化
-eval1 (TmLet x typ (TmVar y),env,k,r,p) = (TmLet x typ e',env,k,r,p)
-                    where e' = getValueBinding y env
-eval1 (TmLet x typ (TmReadTTLFile s),env,k,r,p) = (TmLet x typ e',env,k,r,p)
-                    where e' = getValueBinding ("FILE" ++ ( s \\ ".ttl")) env
-eval1 (TmLet x typ (TmFillPrefix s),env,k,r,p) = (TmLet x typ (TmString e'),env,k,r,p)
-                    where e' = procFillPr (unlines (getNeedFillPr (socToList (varStr s env)))) env ""
-eval1 (TmLet x typ (TmFillBase s),env,k,r,p) = (TmLet x typ (TmString e'),env,k,r,p)
-                    where e' = procFillBa (unlines (getNeedFillBa (socToList (varStr s env)))) env
-eval1 (TmLet x typ (TmReady s),env,k,r,p) = (TmLet x typ (TmString e'),env,k,r,p)
-                    where e' = unlines (getNeedReady (socToList (varStr s env)))
-eval1 (TmLet x typ (TmProcSemic s),env,k,r,p) = (TmLet x typ (TmString e'),env,k,r,p)
-                    where e' = unlines ( procProcSemic (getNeedProcSemic (socToList (varStr s env)))
-                                         ++ getNeedProcSemic' (socToList (varStr s env)))
-eval1 (TmLet x typ (TmProcComma s),env,k,r,p) = (TmLet x typ (TmString e'),env,k,r,p)
-                    where e' = unlines ( procProcComma (getNeedProcComma (socToList (varStr s env)))
-                                         ++ getNeedProcComma' (socToList (varStr s env)))
 eval1 (TmLet x typ e,env,k,r,p) | isValue e = (e,update env x e,k,r,p)
+eval1 (TmLet x typ e,env,k,r,p) = (e,env,(HLet x typ):k,r,p)
+eval1 (v,env,(HLet x typ):k,r,p) | isValue v = (TmLet x typ v,env,k,r,p)
+
 
 -- Evaluation rules for Clear blocks
 eval1 (TmClear x typ,env,k,r,p) = (TmString ("clear " ++ x),clear env x,k,r,p)
@@ -192,7 +179,7 @@ eval1 (e,env,k,r,p) = error "Unknown Evaluation Error"
 --fromResult会返回完美格式的结果，fromResult‘是对语义相同项的处理
 formatResultF :: [String] -> [String]
 formatResultF l = sort $ nub $ [  reverse r'' | r <- formatResult' (formatResult l), let r' = reverse (rmLast r "." ++ "."),
-                        let r'' = replaceFirst '.' ". " $ replaceFirst '>' " >" r']
+                        let r'' = replace "  " " " $ replaceFirst '.' ". " $ replaceFirst '>' " >" r']
 formatResult :: [String] -> [String]
 formatResult l = nub [ s'' | s <- l, let s' = replace ". " "" (filter (/=' ') s ++ "  ."),
                                      let s'' = replace "  " " " $ reverse (replaceFirst  '>' " >" (reverse s'))]
