@@ -71,8 +71,18 @@ isValue _ = False
 -}
 --Small step evaluation function
 eval1 :: State -> State
+-- Evaluation rules for plus and sort string
+-- 只接受Var TmString相加
+eval1 (TmPlusASort e1 e2,env,k,r,p) = (e1,env,HPlus e2 env:k,r,p)
+eval1 (TmVar n,env1,(HPlus e env2):k,r,p) = (e,env2 ++ env1,PlusH e' : k,r,p)
+                                         where e' = getValueBinding (str n) env1
+eval1 (TmVar m,env,(PlusH (TmString n)):k,r,p) = (TmString (toListSort (unparse e' ++ "\n" ++ n)),env,k,r,p)
+                                         where e'  = getValueBinding (str m) env
+
+-- 获取变量
 eval1 (TmVar x,env,k,r,p) = (e',env,k,r,p)
                     where e' = getValueBinding (str x) env
+
 -- Rule for terminated evaluations
 --eval1 (v,env,[],r,[]) | isValue v = (v,env,[],v:r,[])
 eval1 (v,env,[],r,[]) | isValue v = (v,env,[],r,[])
@@ -117,12 +127,9 @@ eval1 (TmAddString e1 e2,env,k,r,p) = (e1,env,HPlus e2 env:k,r,p)
 eval1 (TmString n,env1,(HPlus e env2):k,r,p) = (e,env2 ++ env1,PlusH (TmString (str n)) : k,r,p)
 eval1 (TmString m,env,(PlusH (TmString n)):k,r,p) = (TmString (n ++ str m),env,k,r,p)
 
--- Evaluation rules for plus and sort string
--- 只接受2个Var TmString相加
-eval1 (TmPlusASort (TmVar e1) (TmVar e2),env,k,r,p) = (TmString e''',env,k,r,p)
-                                         where e'  = getValueBinding (str e1) env
-                                               e'' = getValueBinding (str e2) env
-                                               e''' = toListSort ((unparse e') ++ "\n" ++ (unparse e''))
+
+
+
 -- Evaluation rules for projections
 eval1 (TmFst e1,env,k,r,p) = (e1,env, FstH : k,r,p)
 eval1 (TmSnd e1,env,k,r,p) = (e1,env, SndH : k,r,p)
@@ -185,7 +192,7 @@ unparseAll = map unparse
 --适用于FillBase函数, 例: <prob4B> <testPredA> <prob4C> .
 getNeedFillBa :: [String] -> [String]
 getNeedFillBa l = [ s | s <- l, not ("http://" `isInfixOf` s) && isInfixOf ">" s && not ("/>" `isInfixOf` s)]
-procFillBa :: String -> Environment -> String 
+procFillBa :: String -> Environment -> String
 procFillBa s env = filter (/=' ') (replace "<" (varStr "BaseVar" env \\ ">") s)
 --适用于FillPrefix函数, 例: p:subjectC
 --s 为一整个文件的字符串, 通过在
@@ -209,7 +216,7 @@ beFill _ _ s env = error "FillPrefix函数出错"
 --
 --
 -}
-toListSort :: String -> String 
+toListSort :: String -> String
 toListSort s = unlines (sort (split "\n" s))
 
 {-------------------------------------------------------------------------------------------
