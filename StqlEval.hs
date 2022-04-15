@@ -108,6 +108,10 @@ eval1 (TmLet x typ (TmFillPrefix s),env,k,r,p) = (TmLet (str x) typ (TmString e'
                     where e' = procFillPr (unlines (getNeedFillPr (socToList (varStr s env)))) env ""
 eval1 (TmLet x typ (TmFillBase s),env,k,r,p) = (TmLet (str x) typ (TmString e'),env,k,r,p)
                     where e' = procFillBa (unlines (getNeedFillBa (socToList (varStr s env)))) env
+eval1 (TmLet x typ (TmReady s),env,k,r,p) = (TmLet (str x) typ (TmString e'),env,k,r,p)
+                    where e' = unlines (getNeedReady (socToList (varStr s env)))
+eval1 (TmLet x typ (TmProcSemic s),env,k,r,p) = (TmLet (str x) typ (TmString e'),env,k,r,p)
+                    where e' = unlines $ procProcSemic (getNeedProcSemic (socToList (varStr s env))) ++ getNeedProcSemic' (socToList (varStr s env))
 eval1 (TmLet x typ e,env,k,r,p) | isValue e = (e,update env (str x) e,k,r,p)
 
 -- Evaluation rules for Clear blocks
@@ -126,9 +130,6 @@ eval1 (TmInt m,env,(AddH (TmInt n)):k,r,p) = (TmInt (n + m),env,k,r,p)
 eval1 (TmAddString e1 e2,env,k,r,p) = (e1,env,HPlus e2 env:k,r,p)
 eval1 (TmString n,env1,(HPlus e env2):k,r,p) = (e,env2 ++ env1,PlusH (TmString (str n)) : k,r,p)
 eval1 (TmString m,env,(PlusH (TmString n)):k,r,p) = (TmString (n ++ str m),env,k,r,p)
-
-
-
 
 -- Evaluation rules for projections
 eval1 (TmFst e1,env,k,r,p) = (e1,env, FstH : k,r,p)
@@ -152,12 +153,17 @@ eval1 (TmGetVar s,env,k,r,p) = (TmString "已导入var",env',k,r,p)
 
 eval1 (TmReadEnv, env,k,r,p) = (TmString (listEnv env),env,k,r,p)
 
+eval1 (TmProcSemic s, env,k,r,p) = (TmString s',env,k,r,p)
+                           where s' = unlines ( procProcSemic (getNeedProcSemic (socToList (varStr s env))) ++ getNeedProcSemic' (socToList (varStr s env)))
 eval1 (TmFillPrefix s, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = procFillPr (unlines (getNeedFillPr (socToList (varStr s env)))) env ""
 eval1 (TmFillBase s, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = procFillBa (unlines (getNeedFillBa (socToList (varStr s env)))) env
+eval1 (TmReady s, env,k,r,p) = (TmString s',env,k,r,p)
+                           where s' = unlines (getNeedReady (socToList (varStr s env)))
+
 -- Rule for runtime errors
-eval1 (e,env,k,r,p) = error "Evaluation Error"
+eval1 (e,env,k,r,p) = error "Unknown Evaluation Error"
 
 {-------------------------------------------------------------------------------------------
 --这些是函数主程序
@@ -189,6 +195,19 @@ unparseAll = map unparse
 --
 --
 -}
+--适用于ProcSemic函数, 会处理例: <testSubA> <testPredList> -5 ; <testPredList> 10 ; <testPredList> 20 .
+getNeedProcSemic :: [String] -> [String]
+getNeedProcSemic l = [ s | s <- l, isInfixOf ";" s]
+getNeedProcSemic' :: [String] -> [String]
+getNeedProcSemic' l = [ s | s <- l, not ( isInfixOf ";" s)]
+procProcSemic :: [String] -> [String]
+procProcSemic l = concat $ procProcSemic' [ (s1,s2) | s <- l, let s1 = fst $ break isSpace s, let s2 = snd $ break isSpace s]
+procProcSemic' :: [(String,String)] -> [[String]]
+procProcSemic' l = [ s | (s1,s2) <- l, let s = map (s1++) (split ";" s2)] 
+
+--适用于Ready函数, 例: <http://www.cw.org/subjectA> <http://www.cw.org/predicateA> <http://www.cw.org/objectA> . 
+getNeedReady :: [String] -> [String]
+getNeedReady l = [ s | s <- l, length (split "http://" s) == 4]
 --适用于FillBase函数, 例: <prob4B> <testPredA> <prob4C> .
 getNeedFillBa :: [String] -> [String]
 getNeedFillBa l = [ s | s <- l, not ("http://" `isInfixOf` s) && isInfixOf ">" s && not ("/>" `isInfixOf` s)]

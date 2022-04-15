@@ -1,17 +1,15 @@
 --./Stql pr1.stql
 
-Let (bar:String) = (ReadFile bar.ttl);
-GetVars bar;
-Let (pre1:String) = (FillPrefix bar);
-Let (bas1:String) = (FillBase bar);
-Print (pre1 PlusASort bas1);
-
-
 Let (foo:String) = (ReadFile foo.ttl);
-GetVars foo;
+--GetVars foo;
+Print (ProcSemic foo);
+--Let (foo1:String) = (ProcSemic foo);
 
---Let (pre:String) = (FillPrefix bar);
---Let (bas:String) = (FillBase bar);
---Print (pre PlusASort bas);
+--Let (pre2:String) = (FillPrefix foo);
+--Let (bas2:String) = (FillBase foo);
+--Let (rea2:String) = (Ready foo);
+--Print (pre2 PlusASort bas2 PlusASort rea2);
+
+
 
 

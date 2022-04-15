@@ -45,6 +45,7 @@ $white+       ;
   FillPrefix     { tok (\p s -> TokenFillPrefix p) }
   FillBase       { tok (\p s -> TokenFillBase p) }
   Ready          { tok (\p s -> TokenReady p) }
+  ProcSemic      { tok (\p s -> TokenProcSemic p) }
   $alpha [$alpha $digit \_ \’]*      { tok (\p s -> TokenVar p s) }
   \"$alpha [$alpha $digit \_ \’]*\"  { tok (\p s -> TokenString p s) }
 
@@ -92,6 +93,7 @@ data StqlToken =
   TokenFillPrefix AlexPosn       |
   TokenFillBase AlexPosn         |
   TokenReady AlexPosn            |
+  TokenProcSemic AlexPosn        | 
   TokenReadEnv AlexPosn
   deriving (Eq,Show) 
 
@@ -129,6 +131,7 @@ tokenPosn (TokenReadEnv (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenFillPrefix (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenFillBase (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenReady (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenProcSemic (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenReadFile (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenFilePath (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 }
