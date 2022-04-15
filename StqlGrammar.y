@@ -39,6 +39,7 @@ import StqlTokens
     ReadFile         {TokenReadFile _ }
     GetVars           {TokenGetVar _ }
     ReadEnv          { TokenReadEnv _ }
+    Format          { TokenFormat _ }
     FillPrefix       { TokenFillPrefix _ }
     FillBase         { TokenFillBase _ }
     Ready            { TokenReady _ }
@@ -89,6 +90,7 @@ Exp : int                                       { TmInt $1 }
     | ReadFile path                             { TmReadTTLFile $2 }
     | GetVars var                               { TmGetVar $2 }
     | ReadEnv                                   { TmReadEnv }
+    | Format Exp                                    { TmFormat $2}
     | FillPrefix var                            { TmFillPrefix $2}
     | FillBase var                              { TmFillBase $2}
     | Ready var                                 { TmReady $2}
@@ -119,7 +121,7 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmFst Expr | TmSnd Expr | TmAddString Expr Expr
             | TmIf Expr Expr Expr | TmLet String StqlType Expr
             | TmPrint Expr | TmPlusASort Expr Expr
-            | TmGetVar String | TmReadEnv 
+            | TmGetVar String | TmReadEnv | TmFormat Expr
             | TmFillPrefix String | TmFillBase String | TmReady String
             | TmProcSemic String | TmProcComma String
             | TmClear String StqlType | TmClearAll

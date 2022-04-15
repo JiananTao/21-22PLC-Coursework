@@ -2,8 +2,8 @@
 -- Provides a CEK implementation of the \Stql language from the lecture notes
 module StqlEval where
 import StqlGrammar
-import Data.List ( isInfixOf, (\\), elemIndices, intercalate )
-import Data.Char ( isSpace )
+import Data.List ( isInfixOf, (\\), elemIndices, intercalate, nub )
+import Data.Char ( isSpace, isDigit )
 import GHC.OldList (elemIndex)
 import Data.Maybe (isNothing)
 import Data.List (isPrefixOf)
@@ -20,8 +20,10 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmPair Expr Expr | TmAdd Expr Expr | TmVar String 
             | TmFst Expr | TmSnd Expr | TmAddString Expr Expr
             | TmIf Expr Expr Expr | TmLet String StqlType Expr
-            | TmPrint Expr
-            | TmGetVar String | TmReadEnv 
+            | TmPrint Expr | TmPlusASort Expr Expr
+            | TmGetVar String | TmReadEnv | TmFormat Expr
+            | TmFillPrefix String | TmFillBase String | TmReady String
+            | TmProcSemic String | TmProcComma String
             | TmClear String StqlType | TmClearAll
             | TmEnd Expr Expr | TmEnd2 Expr
             | TmReadTTLFile String
@@ -33,7 +35,7 @@ data Frame =
            HAdd Expr Environment | AddH Expr
            | HPlus Expr Environment | PlusH Expr
            | HPair Expr Environment | PairH Expr
-           | FstH | SndH | Print
+           | FstH | SndH | Print | Format
            | HIf Expr Expr Environment
            | Processing Expr
 type Kontinuation = [ Frame ]
@@ -91,7 +93,6 @@ eval1 (v,env,[],r,(Processing e):p) | isValue v = (e,env,[],r,p)
 eval1 (v,env,Print:k,r,p) | isValue v = (v,env,[],v:r,p)
 --TODO:未考虑v不是value的情况
 eval1 (v,env,Print:k,r,(Processing e):p) | isValue v = (e,env,[],v:r,p)
-
 -- Rule for Print
 eval1 (TmPrint e,env,k,r,p) = (e,env,k ++ [Print] ,r,p)
 
@@ -157,6 +158,10 @@ eval1 (TmGetVar s,env,k,r,p) = (TmString "已导入var",env',k,r,p)
                            where env' = getVarFromFile (varStr s env) env
 
 eval1 (TmReadEnv, env,k,r,p) = (TmString (listEnv env),env,k,r,p)
+eval1 (TmFormat e, env,k,r,p) = (e,env,Format:k,r,p)
+eval1 (TmString s,env,Format:k,r,p) = (TmString s',env,k,r,p)
+                           where s' = unlines $ formatResultF (socToList s)
+
 eval1 (TmProcComma s, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = unlines ( procProcComma (getNeedProcComma (socToList (varStr s env)))
                                                 ++ getNeedProcComma' (socToList (varStr s env)))
@@ -173,29 +178,7 @@ eval1 (TmReady s, env,k,r,p) = (TmString s',env,k,r,p)
 -- Rule for runtime errors
 eval1 (e,env,k,r,p) = error "Unknown Evaluation Error"
 
-{-------------------------------------------------------------------------------------------
---这些是函数主程序
---负责与Stql.hs中的main方法对接
---
--}
---Function to iterate the small step reduction to termination
-evalLoop :: String -> String -> Expr -> [Expr]
-evalLoop bar foo e = eval (e,[("FILEbar",TmString bar),("FILEfoo",TmString foo)],[],[],[])
-eval :: (Expr, Environment, Kontinuation, Result, Processing) -> [Expr]
-eval (e,env,k,r,p) | e' == e && isValue e' && null k && null p  = r'
-                   | otherwise                                  = eval (e',env',k',r',p')
-            where (e',env',k',r',p') = eval1 (e,env,k,r,p)
---Function to unparse underlying values from the AST term
-unparse :: Expr -> String
-unparse (TmString n) =  n 
-unparse (TmInt n) = show n
-unparse TmTrue = "true"
-unparse TmFalse = "false"
-unparse TmUnit = "()"
-unparse (TmPair e1 e2) = "( " ++ unparse e1 ++ " , " ++ unparse e2 ++ " )"
-unparse _ = "Unknown"
-unparseAll :: [Expr] -> [String]
-unparseAll = map unparse
+
 
 {-------------------------------------------------------------------------------------------
 --*必须提前运行GetVars函数，将文件中的参数填入
@@ -203,6 +186,28 @@ unparseAll = map unparse
 --
 --
 -}
+--适用于Format函数，用于去除空格，格式化结尾，以及去除重复
+--还有判断结尾是否语义重复
+-- *除了50，20，10外其他数字有未知bug，可能是空格不对
+--fromResult会返回完美格式的结果，fromResult‘是对语义相同项的处理
+formatResultF :: [String] -> [String]
+formatResultF l = sort $ nub $ [  reverse r'' | r <- formatResult' (formatResult l), let r' = reverse (rmLast r "." ++ "."),
+                        let r'' = replaceFirst '.' ". " $ replaceFirst '>' " >" r']
+formatResult :: [String] -> [String]
+formatResult l = nub [ s'' | s <- l, let s' = replace ". " "" (filter (/=' ') s ++ "  ."),
+                                     let s'' = replace "  " " " $ reverse (replaceFirst  '>' " >" (reverse s'))]
+
+formatResult' :: [String] -> [String ]
+formatResult' l =  sort $ [ r' | (r1,r2,r3) <- semanticRepetition l, ifHasDigit r1, let r' = r2 ++ show (readInt r1)] ++ [ r3 | (r1,r2,r3) <- semanticRepetition l, not $ ifHasDigit r1]
+-- 将完整文件行拆分成值m，值前n，全reverse s'
+semanticRepetition :: [String] -> [(String,String,String)]
+semanticRepetition l = [ (r1,r2,reverse s') | s <- l, let s' = filter (/=' ') (reverse s),
+                                         let i = rmMaybe (elemIndex '>' s'),
+                                         let r1 = init $ reverse ( take i s'),
+                                         let r2 = (reverse s') \\ r1]
+
+
+
 --可优化
 --适用于ProcComma函数，会处理例: <testSubA> <testObjList> -5 , 10 , 20 .
 getNeedProcComma :: [String] -> [String]
@@ -291,6 +296,8 @@ procPre s a = (filter (\x -> x /= ' ' && x /= ':') (head (wordsWhen (=='<') s)),
 --
 --
 -}
+rmLast :: Eq a => [a] -> [a] -> [a]
+rmLast s x = reverse $ reverse s \\ x
 --用于ReadEnv语法
 --TODO：只能检测字符串，其他格式抛出错误
 listEnv :: Environment -> String
@@ -308,7 +315,16 @@ clearAll env = [ (y,e2) | (y,e2) <- env, y == "FILEfoo" || y == "FILEbar" ]
 --
 --
 -}
-
+replaceFirst :: Char -> String -> String -> String
+replaceFirst old new s = take (i) s ++ new ++ snd (splitAt (i+1) s)
+                        where i = rmMaybe (elemIndex old s)
+ifHasDigit :: String  -> Bool
+ifHasDigit s = not $ null [ r | r <- s, isDigit r]
+--TODO:bug不能用filter
+readInt :: String -> Int
+readInt s | eqString s "+" = read (tail s)
+          | otherwise      = read s
+          where s' = filter (==' ') s
 rmMaybe :: Maybe a -> a
 rmMaybe (Just a) = a
 rmMaybe Nothing = error "强制去除Maybe错误"
@@ -376,3 +392,26 @@ split delim str =
                                         else split delim
                                                  (drop (length delim) x)
 
+{-------------------------------------------------------------------------------------------
+--这些是函数主程序
+--负责与Stql.hs中的main方法对接
+--
+-}
+--Function to iterate the small step reduction to termination
+evalLoop :: String -> String -> Expr -> [Expr]
+evalLoop bar foo e = eval (e,[("FILEbar",TmString bar),("FILEfoo",TmString foo)],[],[],[])
+eval :: (Expr, Environment, Kontinuation, Result, Processing) -> [Expr]
+eval (e,env,k,r,p) | e' == e && isValue e' && null k && null p  = r'
+                   | otherwise                                  = eval (e',env',k',r',p')
+            where (e',env',k',r',p') = eval1 (e,env,k,r,p)
+--Function to unparse underlying values from the AST term
+unparse :: Expr -> String
+unparse (TmString n) =  n
+unparse (TmInt n) = show n
+unparse TmTrue = "true"
+unparse TmFalse = "false"
+unparse TmUnit = "()"
+unparse (TmPair e1 e2) = "( " ++ unparse e1 ++ " , " ++ unparse e2 ++ " )"
+unparse _ = "Unknown"
+unparseAll :: [Expr] -> [String]
+unparseAll = map unparse

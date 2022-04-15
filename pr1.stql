@@ -19,7 +19,8 @@ GetVars bar2;
 Let (preB2:String) = (FillPrefix bar2);
 Let (basB2:String) = (FillBase bar2);
 Let (reaB2:String) = (Ready bar2);
-Print (preF2 PlusASort basF2 PlusASort reaF2 PlusASort preB2 PlusASort basB2 PlusASort reaB2);
-Print("a" ++ "a" ++"a");
+Print (Format (preF2 PlusASort basF2 PlusASort reaF2 PlusASort preB2 PlusASort basB2 PlusASort reaB2));
+
+
 
 
