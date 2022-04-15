@@ -21,7 +21,7 @@ $white+       ;
   true           { tok (\p s -> TokenTrue p) }
   false          { tok (\p s -> TokenFalse p) }
   "++"           { tok (\p s -> TokenPlusString p) }    
---  PlusASort      { tok (\p s -> TokenPlusASort p )}      
+  PlusASort      { tok (\p s -> TokenPlusASort p )}      
   \+             { tok (\p s -> TokenPlus p) }
   If             { tok (\p s -> TokenIf p) }
   Then           { tok (\p s -> TokenThen p) }
@@ -67,6 +67,7 @@ data StqlToken =
   TokenFalse AlexPosn            |
   TokenPlus AlexPosn             |
   TokenPlusString AlexPosn       |
+  TokenPlusASort AlexPosn        |
   TokenIf AlexPosn               |
   TokenThen AlexPosn             |
   TokenElse AlexPosn             |
@@ -104,6 +105,7 @@ tokenPosn (TokenTrue  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenFalse  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenPlus  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenPlusString  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenPlusASort  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenIf (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenThen (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenElse (AlexPn a l c)) = show(l) ++ ":" ++ show(c)

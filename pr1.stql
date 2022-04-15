@@ -2,11 +2,14 @@
 
 Let (bar:String) = (ReadFile bar.ttl);
 GetVars bar;
-Print p;
-
+Let (pre:String) = (FillPrefix bar);
+Let (bas:String) = (FillBase bar);
+Print (pre PlusASort bas);
 ClearAll;
+--Let (foo:String) = (ReadFile foo.ttl);
+--GetVars foo;
+--Let (pre:String) = (FillPrefix bar);
+--Let (bas:String) = (FillBase bar);
+--Print (pre PlusASort bas);
 
-Let (foo:String) = (ReadFile foo.ttl);
-GetVars foo;
-Print p;
 

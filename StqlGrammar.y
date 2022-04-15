@@ -17,6 +17,7 @@ import StqlTokens
     true   { TokenTrue _ }
     false  { TokenFalse _ }
     '++'   { TokenPlusString _ }
+    PlusASort { TokenPlusASort _ }
     '+'    { TokenPlus _ }
     var    { TokenVar _ $$ }
     If     { TokenIf _ }
@@ -54,6 +55,7 @@ import StqlTokens
 %nonassoc Else
 %left fst snd
 %left '+'
+%left PlusASort
 %left '++'
 %left ','
 %nonassoc int true false var '(' ')'
@@ -69,6 +71,7 @@ Exp : int                                       { TmInt $1 }
     | '('')'                                    { TmUnit }
     | '(' Exp ',' Exp ')'                       { TmPair $2 $4 }
     | Exp '++' Exp                              { TmAddString $1 $3 }
+    | Exp PlusASort Exp                         { TmPlusASort $1 $3 }
     | Exp '+' Exp                               { TmAdd $1 $3 }
     | fst Exp                                   { TmFst $2 }
     | snd Exp                                   { TmSnd $2 }
@@ -110,7 +113,7 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmPair Expr Expr | TmAdd Expr Expr | TmVar String 
             | TmFst Expr | TmSnd Expr | TmAddString Expr Expr
             | TmIf Expr Expr Expr | TmLet String StqlType Expr
-            | TmPrint Expr
+            | TmPrint Expr | TmPlusASort Expr Expr
             | TmGetVar String | TmReadEnv 
             | TmFillPrefix String | TmFillBase String
             | TmClear String StqlType | TmClearAll

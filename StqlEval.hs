@@ -7,6 +7,7 @@ import Data.Char ( isSpace )
 import GHC.OldList (elemIndex)
 import Data.Maybe (isNothing)
 import Data.List (isPrefixOf)
+import Data.List (sort)
 
 
 {-
@@ -116,6 +117,12 @@ eval1 (TmAddString e1 e2,env,k,r,p) = (e1,env,HPlus e2 env:k,r,p)
 eval1 (TmString n,env1,(HPlus e env2):k,r,p) = (e,env2 ++ env1,PlusH (TmString (str n)) : k,r,p)
 eval1 (TmString m,env,(PlusH (TmString n)):k,r,p) = (TmString (n ++ str m),env,k,r,p)
 
+-- Evaluation rules for plus and sort string
+-- 只接受2个Var TmString相加
+eval1 (TmPlusASort (TmVar e1) (TmVar e2),env,k,r,p) = (TmString e''',env,k,r,p)
+                                         where e'  = getValueBinding (str e1) env
+                                               e'' = getValueBinding (str e2) env
+                                               e''' = toListSort ((unparse e') ++ "\n" ++ (unparse e''))
 -- Evaluation rules for projections
 eval1 (TmFst e1,env,k,r,p) = (e1,env, FstH : k,r,p)
 eval1 (TmSnd e1,env,k,r,p) = (e1,env, SndH : k,r,p)
@@ -197,6 +204,13 @@ beFill (Just i) (Just i') s env = let s' = take (i'-1) s in (varStr ((s !! (i-1)
 beFill (Just i) Nothing s env  = (varStr ((s !! (i-1)):"") env \\ ">") ++ drop (i+1) s
 beFill _ _ s env = error "FillPrefix函数出错"
 
+{-
+--这里是将TTL输出文件合并排序的函数
+--
+--
+-}
+toListSort :: String -> String 
+toListSort s = unlines (sort (split "\n" s))
 
 {-------------------------------------------------------------------------------------------
 --这些是为了获得文件里变量的方法
