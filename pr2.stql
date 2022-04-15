@@ -1,0 +1,12 @@
+Let (foo:String) = (ReadFile foo.ttl);
+Let (foo1:String) = (ProcSemic foo);
+Let (foo2:String) = (ProcComma foo1);
+GetVars foo2;
+Let (preF2:String) = (FillPrefix foo2);
+Let (basF2:String) = (FillBase foo2);
+Let (reaF2:String) = (Ready foo2);
+Let (all:String) = Format (preF2 PlusASort basF2 PlusASort reaF2);
+--DefineSubj "http://www.cw.org/#problem2" all;
+--DefineObj "True" all;
+--Print all;
+Print all;
