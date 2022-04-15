@@ -100,10 +100,11 @@ eval1 (TmEnd2 e,env,k,r,p) = (e,env,k,r,p)
 eval1 (TmEnd e1 e2,env,k,r,p) = (e2,env,k,r,Processing e1:p)
 
 -- Evaluation rules for Let blocks
+-- TODO: 可优化
 eval1 (TmLet x typ (TmVar y),env,k,r,p) = (TmLet (str x) typ e',env,k,r,p)
                     where e' = getValueBinding (str y) env
 eval1 (TmLet x typ (TmReadTTLFile s),env,k,r,p) = (TmLet (str x) typ e',env,k,r,p)
-                    where e' = getValueBinding ("FILE" ++ ((str s) \\ ".ttl")) env
+                    where e' = getValueBinding ("FILE" ++ (str s \\ ".ttl")) env
 eval1 (TmLet x typ (TmFillPrefix s),env,k,r,p) = (TmLet (str x) typ (TmString e'),env,k,r,p)
                     where e' = procFillPr (unlines (getNeedFillPr (socToList (varStr s env)))) env ""
 eval1 (TmLet x typ (TmFillBase s),env,k,r,p) = (TmLet (str x) typ (TmString e'),env,k,r,p)
@@ -111,7 +112,11 @@ eval1 (TmLet x typ (TmFillBase s),env,k,r,p) = (TmLet (str x) typ (TmString e'),
 eval1 (TmLet x typ (TmReady s),env,k,r,p) = (TmLet (str x) typ (TmString e'),env,k,r,p)
                     where e' = unlines (getNeedReady (socToList (varStr s env)))
 eval1 (TmLet x typ (TmProcSemic s),env,k,r,p) = (TmLet (str x) typ (TmString e'),env,k,r,p)
-                    where e' = unlines $ procProcSemic (getNeedProcSemic (socToList (varStr s env))) ++ getNeedProcSemic' (socToList (varStr s env))
+                    where e' = unlines ( procProcSemic (getNeedProcSemic (socToList (varStr s env)))
+                                         ++ getNeedProcSemic' (socToList (varStr s env)))
+eval1 (TmLet x typ (TmProcComma s),env,k,r,p) = (TmLet (str x) typ (TmString e'),env,k,r,p)
+                    where e' = unlines ( procProcComma (getNeedProcComma (socToList (varStr s env)))
+                                         ++ getNeedProcComma' (socToList (varStr s env)))
 eval1 (TmLet x typ e,env,k,r,p) | isValue e = (e,update env (str x) e,k,r,p)
 
 -- Evaluation rules for Clear blocks
@@ -152,9 +157,12 @@ eval1 (TmGetVar s,env,k,r,p) = (TmString "已导入var",env',k,r,p)
                            where env' = getVarFromFile (varStr s env) env
 
 eval1 (TmReadEnv, env,k,r,p) = (TmString (listEnv env),env,k,r,p)
-
+eval1 (TmProcComma s, env,k,r,p) = (TmString s',env,k,r,p)
+                           where s' = unlines ( procProcComma (getNeedProcComma (socToList (varStr s env)))
+                                                ++ getNeedProcComma' (socToList (varStr s env)))
 eval1 (TmProcSemic s, env,k,r,p) = (TmString s',env,k,r,p)
-                           where s' = unlines ( procProcSemic (getNeedProcSemic (socToList (varStr s env))) ++ getNeedProcSemic' (socToList (varStr s env)))
+                           where s' = unlines ( procProcSemic (getNeedProcSemic (socToList (varStr s env)))
+                                                ++ getNeedProcSemic' (socToList (varStr s env)))
 eval1 (TmFillPrefix s, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = procFillPr (unlines (getNeedFillPr (socToList (varStr s env)))) env ""
 eval1 (TmFillBase s, env,k,r,p) = (TmString s',env,k,r,p)
@@ -195,6 +203,16 @@ unparseAll = map unparse
 --
 --
 -}
+--可优化
+--适用于ProcComma函数，会处理例: <testSubA> <testObjList> -5 , 10 , 20 .
+getNeedProcComma :: [String] -> [String]
+getNeedProcComma l = [ s | s <- l, isInfixOf "," s]
+getNeedProcComma' :: [String] -> [String]
+getNeedProcComma' l = [ s | s <- l, not ( isInfixOf "," s)]
+procProcComma :: [String] -> [String]
+procProcComma l = concat $ procProcComma' [ (s1,s2) | s <- l, let s' = s \\ " ", let s1 = fst $ break isSpace s', let s2 = snd $ break isSpace s']
+procProcComma' :: [(String,String)] -> [[String]]
+procProcComma' l = [ s | (s1,s2) <- l, let s = map (s1++) (split "," s2)]
 --适用于ProcSemic函数, 会处理例: <testSubA> <testPredList> -5 ; <testPredList> 10 ; <testPredList> 20 .
 getNeedProcSemic :: [String] -> [String]
 getNeedProcSemic l = [ s | s <- l, isInfixOf ";" s]
@@ -203,7 +221,7 @@ getNeedProcSemic' l = [ s | s <- l, not ( isInfixOf ";" s)]
 procProcSemic :: [String] -> [String]
 procProcSemic l = concat $ procProcSemic' [ (s1,s2) | s <- l, let s1 = fst $ break isSpace s, let s2 = snd $ break isSpace s]
 procProcSemic' :: [(String,String)] -> [[String]]
-procProcSemic' l = [ s | (s1,s2) <- l, let s = map (s1++) (split ";" s2)] 
+procProcSemic' l = [ s | (s1,s2) <- l, let s = map (s1++) (split ";" s2)]
 
 --适用于Ready函数, 例: <http://www.cw.org/subjectA> <http://www.cw.org/predicateA> <http://www.cw.org/objectA> . 
 getNeedReady :: [String] -> [String]

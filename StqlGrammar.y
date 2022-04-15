@@ -43,6 +43,7 @@ import StqlTokens
     FillBase         { TokenFillBase _ }
     Ready            { TokenReady _ }
     ProcSemic        { TokenProcSemic _ }
+    ProcComma        { TokenProcComma _ }
 
 %left ';'
 %left arr
@@ -92,7 +93,7 @@ Exp : int                                       { TmInt $1 }
     | FillBase var                              { TmFillBase $2}
     | Ready var                                 { TmReady $2}
     | ProcSemic var                             { TmProcSemic $2}
-
+    | ProcComma var                             { TmProcComma $2}
 
 Type : Bool                     { TyBool } 
      | Int                      { TyInt } 
@@ -120,7 +121,7 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmPrint Expr | TmPlusASort Expr Expr
             | TmGetVar String | TmReadEnv 
             | TmFillPrefix String | TmFillBase String | TmReady String
-            | TmProcSemic String
+            | TmProcSemic String | TmProcComma String
             | TmClear String StqlType | TmClearAll
             | TmEnd Expr Expr | TmEnd2 Expr
             | TmReadTTLFile String
