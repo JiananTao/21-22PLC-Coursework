@@ -46,6 +46,7 @@ import StqlTokens
     ProcSemic        { TokenProcSemic _ }
     ProcComma        { TokenProcComma _ }
     DefineSubj       { TokenDefineSubj _ }
+    DefineObj       { TokenDefineObj _ }
     In               { TokenIn _ }
 
 %left ';'
@@ -100,6 +101,7 @@ Exp : int                                       { TmInt $1 }
     | ProcSemic var                             { TmProcSemic $2}
     | ProcComma var                             { TmProcComma $2}
     | DefineSubj string In var                     { TmDefineSubj $2 $4 }
+    | DefineObj string In var                     { TmDefineObj $2 $4 }
 
 Type : Bool                     { TyBool } 
      | Int                      { TyInt } 
@@ -129,7 +131,7 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmFillPrefix String | TmFillBase String | TmReady String
             | TmProcSemic String | TmProcComma String
             | TmClear String StqlType | TmClearAll
-            | TmDefineSubj String String
+            | TmDefineSubj String String | TmDefineObj String String
             | TmEnd Expr Expr | TmEnd2 Expr
             | TmReadTTLFile String
     deriving (Show,Eq)

@@ -163,6 +163,9 @@ eval1 (TmReady s, env,k,r,p) = (TmString s',env,k,r,p)
 -- Evaluation rules for DefineSubj blocks
 eval1 (TmDefineSubj subj x, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = pcDefineSubj (subj \\ ['\"','\"']) (socToList (varStr x env))
+-- Evaluation rules for DefineObj blocks
+eval1 (TmDefineObj obj x, env,k,r,p) = (TmString s',env,k,r,p)
+                           where s' = pcDefineObj (obj \\ ['\"','\"']) (socToList (varStr x env))
 --eval1 (TmDefineSubj _ _,_,_,_,_) = error "错误的DefineSubj格式"
 -- Rule for runtime errors
 eval1 (e,env,k,r,p) = error "Unknown Evaluation Error"
@@ -178,6 +181,9 @@ eval1 (e,env,k,r,p) = error "Unknown Evaluation Error"
 --适用于DefineSubj函数
 pcDefineSubj :: String -> [String] -> String
 pcDefineSubj subj s = unlines [ r | r <- s , subj `isInfixOf` r]
+--适用于DefineObj函数
+pcDefineObj :: String -> [String] -> String
+pcDefineObj obj s = unlines [ r | r <- s , obj `isInfixOf` reverse (take 6 (reverse r)) ]
 --适用于Format函数，用于去除空格，格式化结尾，以及去除重复
 --还有判断结尾是否语义重复
 -- *除了50，20，10外其他数字有未知bug，可能是空格不对
