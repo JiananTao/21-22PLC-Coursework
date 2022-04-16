@@ -148,7 +148,6 @@ eval1 (TmReadEnv, env,k,r,p) = (TmString (listEnv env),env,k,r,p)
 eval1 (TmFormat e, env,k,r,p) = (e,env,Format:k,r,p)
 eval1 (TmString s,env,Format:k,r,p) = (TmString s',env,k,r,p)
                            where s' = unlines $ formatResultF (socToList s)
-
 eval1 (TmProcComma s, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = unlines ( procProcComma (getNeedProcComma (socToList (varStr s env)))
                                                 ++ getNeedProcComma' (socToList (varStr s env)))
@@ -161,7 +160,10 @@ eval1 (TmFillBase s, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = procFillBa (unlines (getNeedFillBa (socToList (varStr s env)))) env
 eval1 (TmReady s, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = unlines (getNeedReady (socToList (varStr s env)))
-
+-- Evaluation rules for DefineSubj blocks
+eval1 (TmDefineSubj subj x, env,k,r,p) = (TmString s',env,k,r,p)
+                           where s' = pcDefineSubj (subj \\ ['\"','\"']) (socToList (varStr x env))
+--eval1 (TmDefineSubj _ _,_,_,_,_) = error "错误的DefineSubj格式"
 -- Rule for runtime errors
 eval1 (e,env,k,r,p) = error "Unknown Evaluation Error"
 
@@ -173,6 +175,9 @@ eval1 (e,env,k,r,p) = error "Unknown Evaluation Error"
 --
 --
 -}
+--适用于DefineSubj函数
+pcDefineSubj :: String -> [String] -> String
+pcDefineSubj subj s = unlines [ r | r <- s , subj `isInfixOf` r]
 --适用于Format函数，用于去除空格，格式化结尾，以及去除重复
 --还有判断结尾是否语义重复
 -- *除了50，20，10外其他数字有未知bug，可能是空格不对
@@ -316,7 +321,7 @@ rmMaybe :: Maybe a -> a
 rmMaybe (Just a) = a
 rmMaybe Nothing = error "强制去除Maybe错误"
 varStr :: String -> Environment -> String
-varStr s env = unparse (getValueBinding s env)
+varStr s env = unparse (getValueBinding (s \\ ['\"','\"']) env)
 
 --TODO: 去除2个“符号,防止引入的String带有“
 

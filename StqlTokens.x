@@ -48,9 +48,10 @@ $white+       ;
   Ready          { tok (\p s -> TokenReady p) }
   ProcSemic      { tok (\p s -> TokenProcSemic p) }
   ProcComma      { tok (\p s -> TokenProcComma p) }
-
+  DefineSubj     { tok (\p s -> TokenDefineSubj p) }
+  In     { tok (\p s -> TokenIn p) }
   $alpha [$alpha $digit \_ \’]*      { tok (\p s -> TokenVar p s) }
-  \"$alpha [$alpha $digit \_ \’]*\"  { tok (\p s -> TokenString p s) }
+  \".*\"  { tok (\p s -> TokenString p s) }
 
 
 { 
@@ -99,6 +100,8 @@ data StqlToken =
   TokenProcSemic AlexPosn        | 
   TokenProcComma AlexPosn        | 
   TokenFormat AlexPosn           |
+  TokenDefineSubj AlexPosn       |
+  TokenIn AlexPosn       |
   TokenReadEnv AlexPosn
   deriving (Eq,Show) 
 
@@ -139,6 +142,8 @@ tokenPosn (TokenFillBase (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenReady (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenProcSemic (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenProcComma (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenDefineSubj (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenIn (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenReadFile (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenFilePath (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 }
