@@ -33,6 +33,9 @@ import StqlTokens
     '='    { TokenEq _ }
     '('    { TokenLParen _ } 
     ')'    { TokenRParen _ } 
+    '['    { TokenLList _ } 
+    ']'    { TokenRList _ }
+    '|'    { TokenListSeg _ }
     ','    { TokenComma _ }
     ';'    { TokenEnd _}
     path             {TokenFilePath _ $$}
@@ -51,6 +54,7 @@ import StqlTokens
 
 %left ';'
 %left arr
+%left '['
 %right Let
 %right ClearAll
 %right Clear
@@ -63,10 +67,11 @@ import StqlTokens
 %nonassoc Else
 %left fst snd
 %left '+'
-%left PlusASort
 %left '++'
+%left PlusASort
 %left ','
 %nonassoc int true false var '(' ')'
+
 
 
 
@@ -78,6 +83,8 @@ Exp : int                                       { TmInt $1 }
     | false                                     { TmFalse } 
     | '('')'                                    { TmUnit }
     | '(' Exp ',' Exp ')'                       { TmPair $2 $4 }
+    | '[' Exp ']'                               { TmList $2 }
+    | Exp '|' Exp                               { TmListSeg $1 $3 }
     | Exp '++' Exp                              { TmAddString $1 $3 }
     | Exp PlusASort Exp                         { TmPlusASort $1 $3 }
     | Exp '+' Exp                               { TmAdd $1 $3 }
@@ -86,7 +93,7 @@ Exp : int                                       { TmInt $1 }
     | If Exp Then Exp Else Exp                  { TmIf $2 $4 $6 } 
     | Let '(' var ':' Type ')' '=' Exp          { TmLet $3 $5 $8 }
     | Clear '(' var ':' Type ')'                { TmClear $3 $5 }
-    | ClearAll               { TmClearAll }
+    | ClearAll                                  { TmClearAll }
     | '(' Exp ')'                               { $2 }
     | Exp ';' Exp                               { TmEnd $3 $1}
     | Exp ';'                                   { TmEnd2 $1 }
@@ -100,7 +107,7 @@ Exp : int                                       { TmInt $1 }
     | Ready var                                 { TmReady $2}
     | ProcSemic var                             { TmProcSemic $2}
     | ProcComma var                             { TmProcComma $2}
-    | DefineSubj string In var                     { TmDefineSubj $2 $4 }
+    | DefineSubj Exp In var                     { TmDefineSubj $2 $4 }
     | DefineObj string In var                     { TmDefineObj $2 $4 }
 
 Type : Bool                     { TyBool } 
@@ -110,6 +117,8 @@ Type : Bool                     { TyBool }
      | '(' Type ',' Type ')'    { TyPair $2 $4 }
      | Type arr Type            { TyFun $1 $3 } 
 
+--只支持string目前
+--List : string '|' string                               { TmListSeg $1 $3 }
 
 
 { 
@@ -126,14 +135,17 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmPair Expr Expr | TmAdd Expr Expr | TmVar String 
             | TmFst Expr | TmSnd Expr | TmAddString Expr Expr
             | TmIf Expr Expr Expr | TmLet String StqlType Expr
+            | TmList Expr | TmListSeg Expr Expr
             | TmPrint Expr | TmPlusASort Expr Expr
             | TmGetVar String | TmReadEnv | TmFormat Expr
             | TmFillPrefix String | TmFillBase String | TmReady String
             | TmProcSemic String | TmProcComma String
             | TmClear String StqlType | TmClearAll
-            | TmDefineSubj String String | TmDefineObj String String
+            | TmDefineSubj Expr String | TmDefineObj String String
             | TmEnd Expr Expr | TmEnd2 Expr
             | TmReadTTLFile String
     deriving (Show,Eq)
+--data Test = TmListSeg String String 
+--    deriving (Show,Eq)
 
 } 

@@ -3,10 +3,12 @@ module StqlTokens where
 }
 
 %wrapper "posn" 
-$digit = 0-9     
 -- digits 
-$alpha = [a-zA-Z]    
+$digit = 0-9     
 -- alphabetic characters
+$alpha = [a-zA-Z]   
+$algit = [a-zA-Z0-9\#\:\/\.]
+
 
 tokens :-
 $white+       ; 
@@ -36,6 +38,9 @@ $white+       ;
   =              { tok (\p s -> TokenEq p )}
   \(             { tok (\p s -> TokenLParen p) }
   \)             { tok (\p s -> TokenRParen p) }
+  \[             { tok (\p s -> TokenLList p) }
+  \]             { tok (\p s -> TokenRList p) }
+  \|             { tok (\p s -> TokenListSeg p) }
   [$alpha $digit \_ \']*.ttl    { tok (\p s -> TokenFilePath p s) }
   \;             { tok (\p s -> TokenEnd p) }
   Print          { tok (\p s -> TokenPrint p )}
@@ -52,7 +57,7 @@ $white+       ;
   DefineObj     { tok (\p s -> TokenDefineObj p) }
   In     { tok (\p s -> TokenIn p) }
   $alpha [$alpha $digit \_ \’]*      { tok (\p s -> TokenVar p s) }
-  \".*\"  { tok (\p s -> TokenString p s) }
+  \"$algit*\"  { tok (\p s -> TokenString p s) }
 
 
 { 
@@ -63,6 +68,7 @@ tok f p s = f p s
 
 -- The token type: 
 data StqlToken = 
+  TokenEnd AlexPosn              |
   TokenTypeBool AlexPosn         | 
   TokenTypeInt  AlexPosn         | 
   TokenTypeString  AlexPosn      |
@@ -89,12 +95,14 @@ data StqlToken =
   TokenEq AlexPosn               |
   TokenLParen AlexPosn           |
   TokenRParen AlexPosn           |
+  TokenLList AlexPosn            |
+  TokenRList AlexPosn            |
+  TokenListSeg AlexPosn          |
   TokenComma AlexPosn            | 
   TokenVar AlexPosn String       |
   TokenReadFile AlexPosn         |
   TokenGetVar AlexPosn           |
   TokenFilePath AlexPosn String  |
-  TokenEnd AlexPosn              |
   TokenFillPrefix AlexPosn       |
   TokenFillBase AlexPosn         |
   TokenReady AlexPosn            |
@@ -102,8 +110,8 @@ data StqlToken =
   TokenProcComma AlexPosn        | 
   TokenFormat AlexPosn           |
   TokenDefineSubj AlexPosn       |
-  TokenDefineObj AlexPosn       |
-  TokenIn AlexPosn       |
+  TokenDefineObj AlexPosn        |
+  TokenIn AlexPosn               | 
   TokenReadEnv AlexPosn
   deriving (Eq,Show) 
 
@@ -134,6 +142,9 @@ tokenPosn (TokenClearAll (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenEq  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenLParen (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenRParen (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenLList (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenRList (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenListSeg (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenComma (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenVar (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenEnd (AlexPn a l c)) = show(l) ++ ":" ++ show(c)

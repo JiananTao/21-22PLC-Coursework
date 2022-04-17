@@ -36,6 +36,7 @@ data Frame =
            | HPlus Expr Environment | PlusH Expr
            | HPair Expr Environment | PairH Expr
            | FstH | SndH | Print | Format
+           | List | HList Expr Environment | ListH Expr
            | HIf Expr Expr Environment
            | Processing Expr | HLet String StqlType
 type Kontinuation = [ Frame ]
@@ -94,6 +95,8 @@ eval1 (v,env,Print:k,r,p) | isValue v = (v,env,[],v:r,p)
 --TODO:未考虑v不是value的情况
 eval1 (v,env,Print:k,r,(Processing e):p) | isValue v = (e,env,[],v:r,p)
 
+--
+eval1 (v,env,List:k,r,p) | isValue v = (v,env,[],r,p)
 -- Rule for Print
 eval1 (TmPrint e,env,k,r,p) = (e,env,k ++ [Print] ,r,p)
 
@@ -121,8 +124,14 @@ eval1 (TmInt m,env,(AddH (TmInt n)):k,r,p) = (TmInt (n + m),env,k,r,p)
 
 -- Evaluation rules for plus string operator
 eval1 (TmAddString e1 e2,env,k,r,p) = (e1,env,HPlus e2 env:k,r,p)
-eval1 (TmString n,env1,(HPlus e env2):k,r,p) = (e,env2 ++ env1,PlusH (TmString n) : k,r,p)
-eval1 (TmString m,env,(PlusH (TmString n)):k,r,p) = (TmString (n ++ m),env,k,r,p)
+eval1 (TmString n,env1,(HPlus e env2):k,r,p) = (e,env2 ++ env1,PlusH (TmString (rmQuo n)) : k,r,p)
+eval1 (TmString m,env,(PlusH (TmString n)):k,r,p) = (TmString (n ++ (rmQuo m)),env,k,r,p)
+
+-- Evaluation rules for List operator
+eval1 (TmList e,env,k,r,p) = (e,env,k ++ [List],r,p)
+eval1 (TmListSeg e1 e2,env,k,r,p) = (e2,env,HList e1 env:k,r,p)
+eval1 (TmString n,env1,(HList e env2):k,r,p) = (e,env2 ++ env1,ListH (TmString (rmQuo n)) : k,r,p)
+eval1 (TmString m,env,(ListH (TmString n)):k,r,p) = (TmString (n ++ "\n" ++ rmQuo m),env,k,r,p)
 
 -- Evaluation rules for projections
 eval1 (TmFst e1,env,k,r,p) = (e1,env, FstH : k,r,p)
@@ -161,8 +170,10 @@ eval1 (TmFillBase s, env,k,r,p) = (TmString s',env,k,r,p)
 eval1 (TmReady s, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = unlines (getNeedReady (socToList (varStr s env)))
 -- Evaluation rules for DefineSubj blocks
-eval1 (TmDefineSubj subj x, env,k,r,p) = (TmString s',env,k,r,p)
+eval1 (TmDefineSubj (TmString subj) x, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = pcDefineSubj (subj \\ ['\"','\"']) (socToList (varStr x env))
+eval1 (TmDefineSubj (TmVar subj) x, env,k,r,p) = (TmString s',env,k,r,p)
+                           where s' = pcDefineSubj (unparse (getValueBinding subj env) \\ ['\"','\"']) (socToList (varStr x env))
 -- Evaluation rules for DefineObj blocks
 eval1 (TmDefineObj obj x, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = pcDefineObj (obj \\ ['\"','\"']) (socToList (varStr x env))
@@ -180,7 +191,8 @@ eval1 (e,env,k,r,p) = error "Unknown Evaluation Error"
 -}
 --适用于DefineSubj函数
 pcDefineSubj :: String -> [String] -> String
-pcDefineSubj subj s = unlines [ r | r <- s , subj `isInfixOf` r]
+pcDefineSubj subj s | "\n" `isInfixOf` subj = unlines $ nub [ r | r <- s , r' <- wordsWhen (=='\n') subj, r' `isInfixOf` r]
+                    | otherwise = unlines [ r | r <- s , subj `isInfixOf` r]
 --适用于DefineObj函数
 pcDefineObj :: String -> [String] -> String
 pcDefineObj obj s = unlines [ r | r <- s , obj `isInfixOf` reverse (take 6 (reverse r)) ]
@@ -313,6 +325,10 @@ clearAll env = [ (y,e2) | (y,e2) <- env, y == "FILEfoo" || y == "FILEbar" ]
 --
 --
 -}
+rmQuo :: String -> String
+rmQuo [] = ""
+rmQuo s =  if (head s == '\"') && (last s == '\"') then init (tail s) else s
+
 replaceFirst :: Char -> String -> String -> String
 replaceFirst old new s = take (i) s ++ new ++ snd (splitAt (i+1) s)
                         where i = rmMaybe (elemIndex old s)
