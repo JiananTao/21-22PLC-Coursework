@@ -49,7 +49,8 @@ import StqlTokens
     ProcSemic        { TokenProcSemic _ }
     ProcComma        { TokenProcComma _ }
     DefineSubj       { TokenDefineSubj _ }
-    DefineObj       { TokenDefineObj _ }
+    DefineObj        { TokenDefineObj _ }
+    DefinePred       { TokenDefinePred _ }
     In               { TokenIn _ }
 
 %left ';'
@@ -108,7 +109,9 @@ Exp : int                                       { TmInt $1 }
     | ProcSemic var                             { TmProcSemic $2}
     | ProcComma var                             { TmProcComma $2}
     | DefineSubj Exp In var                     { TmDefineSubj $2 $4 }
-    | DefineObj string In var                     { TmDefineObj $2 $4 }
+    | DefineObj string In var                   { TmDefineObj $2 $4 }
+    | DefinePred string In var                  { TmDefinePred $2 $4 }
+
 
 Type : Bool                     { TyBool } 
      | Int                      { TyInt } 
@@ -130,7 +133,6 @@ data StqlType = TyInt | TyString | TyBool | TyUnit | TyPair StqlType StqlType | 
    deriving (Show,Eq)
 
 type Environment = [ (String,Expr) ]
-
 data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit 
             | TmPair Expr Expr | TmAdd Expr Expr | TmVar String 
             | TmFst Expr | TmSnd Expr | TmAddString Expr Expr
@@ -141,7 +143,7 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmFillPrefix String | TmFillBase String | TmReady String
             | TmProcSemic String | TmProcComma String
             | TmClear String StqlType | TmClearAll
-            | TmDefineSubj Expr String | TmDefineObj String String
+            | TmDefineSubj Expr String | TmDefineObj String String | TmDefinePred String String
             | TmEnd Expr Expr | TmEnd2 Expr
             | TmReadTTLFile String
     deriving (Show,Eq)

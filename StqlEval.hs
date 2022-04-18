@@ -23,7 +23,7 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmPrint Expr | TmPlusASort Expr Expr
             | TmGetVar String | TmReadEnv | TmFormat Expr
             | TmFillPrefix String | TmFillBase String | TmReady String
-            | TmProcSemic String | TmProcComma String
+            | TmProcSemic String | TmProcComma String 
             | TmClear String StqlType | TmClearAll
             | TmEnd Expr Expr | TmEnd2 Expr
             | TmReadTTLFile String
@@ -154,9 +154,11 @@ eval1 (TmGetVar s,env,k,r,p) = (TmString "已导入var",env',k,r,p)
                            where env' = getVarFromFile (varStr s env) env
 
 eval1 (TmReadEnv, env,k,r,p) = (TmString (listEnv env),env,k,r,p)
+-- Evaluation rules for Format Function blocks
 eval1 (TmFormat e, env,k,r,p) = (e,env,Format:k,r,p)
 eval1 (TmString s,env,Format:k,r,p) = (TmString s',env,k,r,p)
                            where s' = unlines $ formatResultF (socToList s)
+
 eval1 (TmProcComma s, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = unlines ( procProcComma (getNeedProcComma (socToList (varStr s env)))
                                                 ++ getNeedProcComma' (socToList (varStr s env)))
@@ -177,7 +179,12 @@ eval1 (TmDefineSubj (TmVar subj) x, env,k,r,p) = (TmString s',env,k,r,p)
 -- Evaluation rules for DefineObj blocks
 eval1 (TmDefineObj obj x, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = pcDefineObj (obj \\ ['\"','\"']) (socToList (varStr x env))
---eval1 (TmDefineSubj _ _,_,_,_,_) = error "错误的DefineSubj格式"
+-- Evaluation rules for DefinePred blocks
+eval1 (TmDefinePred pred x, env,k,r,p) = (TmString s', env,k,r,p)
+                           where s' = pcDefinePred (pred \\ ['\"','\"']) (socToList (varStr x env))                          
+
+
+
 -- Rule for runtime errors
 eval1 (e,env,k,r,p) = error "Unknown Evaluation Error"
 
@@ -196,10 +203,15 @@ pcDefineSubj subj s | "\n" `isInfixOf` subj = unlines $ nub [ r | r <- s , r' <-
 --适用于DefineObj函数
 pcDefineObj :: String -> [String] -> String
 pcDefineObj obj s = unlines [ r | r <- s , obj `isInfixOf` reverse (take 6 (reverse r)) ]
+
+pcDefinePred :: String -> [String] -> String
+pcDefinePred pred s = unlines [ r | r <- s , pred `isInfixOf` r]
+
 --适用于Format函数，用于去除空格，格式化结尾，以及去除重复
 --还有判断结尾是否语义重复
 -- *除了50，20，10外其他数字有未知bug，可能是空格不对
 --fromResult会返回完美格式的结果，fromResult‘是对语义相同项的处理
+--   .
 formatResultF :: [String] -> [String]
 formatResultF l = sort $ nub $ [  reverse r'' | r <- formatResult' (formatResult l), let r' = reverse (rmLast r "." ++ "."),
                         let r'' = replace "  " " " $ replaceFirst '.' ". " $ replaceFirst '>' " >" r']
@@ -209,7 +221,10 @@ formatResult l = nub [ s'' | s <- l, let s' = replace ". " "" (filter (/=' ') s 
 
 formatResult' :: [String] -> [String ]
 formatResult' l =  sort $ [ r' | (r1,r2,r3) <- semanticRepetition l, ifHasDigit r1, let r' = r2 ++ show (readInt r1)] ++ [ r3 | (r1,r2,r3) <- semanticRepetition l, not $ ifHasDigit r1]
--- 将完整文件行拆分成值m，值前n，全reverse s'
+-- 将完整文件行拆分成值r1，值前r2，全reverse s'
+-- r1 = true .
+-- r2  = <http://www.cw.org/#problem2><http://www.cw.org/testPredB>
+-- reverse s' = <http://www.cw.org/#problem2><http://www.cw.org/testPredB> true.
 semanticRepetition :: [String] -> [(String,String,String)]
 semanticRepetition l = [ (r1,r2,reverse s') | s <- l, let s' = filter (/=' ') (reverse s),
                                          let i = rmMaybe (elemIndex '>' s'),
@@ -351,6 +366,7 @@ varStr s env = unparse (getValueBinding (s \\ ['\"','\"']) env)
 socToList :: String -> [String]
 socToList = wordsWhen (=='\n')
 --例:print $ wordsWhen (=='.') "get.ttl.split"
+--["get","ttl","split"]
 wordsWhen     :: (Char -> Bool) -> String -> [String]
 wordsWhen p s =  case dropWhile p s of
                       "" -> []
