@@ -1,0 +1,13 @@
+Let (foo:String) = (ReadFile foo.ttl);
+Let (foo1:String) = (ProcSemic foo);
+Let (foo2:String) = (ProcComma foo1);
+GetVars foo2;
+Let (preF2:String) = (FillPrefix foo2);
+Let (basB2:String) = (FillBase foo2);
+Let (reaF2:String) = (Ready foo2);
+Let (all:String) = Format(preF2 PlusASort basB2 PlusASort reaF2);
+Let (all1:String) = (DefinePred "http://www.cw.org/problem3/#predicate1" In all);
+Let (all2:String) = (DefinePred "http://www.cw.org/problem3/#predicate2" In all);
+Let (all3:String) = (DefinePred "http://www.cw.org/problem3/#predicate3" In all);
+Print( Format (all1 PlusASort all2 PlusASort all3));
+
