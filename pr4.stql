@@ -1,0 +1,19 @@
+Let (foo:String) = (ReadFile foo.ttl);
+Let (foo1:String) = (ProcSemic foo);
+Let (foo2:String) = (ProcComma foo1);
+GetVars foo2;
+Let (preF2:String) = (FillPrefix foo2);
+Let (basF2:String) = (FillBase foo2);
+Let (reaF2:String) = (Ready foo2);
+Let (allF:String) = Format (preF2 PlusASort basF2 PlusASort reaF2);
+
+Let (bar:String) = (ReadFile bar.ttl);
+Let (bar1:String) = (ProcSemic bar);
+Let (bar2:String) = (ProcComma bar1);
+GetVars bar2;
+Let (preB2:String) = (FillPrefix bar2);
+Let (basB2:String) = (FillBase bar2);
+Let (reaB2:String) = (Ready bar2);
+Let (allB:String) = Format (preB2 PlusASort basB2 PlusASort reaB2);
+
+Print (Format ((Compare "Obj" allF In "Subj" allB) ++ (Compare "Obj" allB In "Subj" allF)));

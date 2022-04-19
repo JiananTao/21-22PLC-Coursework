@@ -57,6 +57,7 @@ $white+       ;
   DefineObj      { tok (\p s -> TokenDefineObj p) }
   DefinePred     { tok (\p s -> TokenDefinePred p) }
   In             { tok (\p s -> TokenIn p) }
+  Compare        { tok (\p s -> TokenCompare p) }
   $alpha [$alpha $digit \_ \’]*      { tok (\p s -> TokenVar p s) }
   \"$algit*\"    { tok (\p s -> TokenString p s) }
 
@@ -113,6 +114,7 @@ data StqlToken =
   TokenDefineSubj AlexPosn       |
   TokenDefineObj AlexPosn        |
   TokenDefinePred AlexPosn       |
+  TokenCompare AlexPosn          |
   TokenIn AlexPosn               |
   TokenReadEnv AlexPosn
   deriving (Eq,Show) 
@@ -160,6 +162,7 @@ tokenPosn (TokenProcComma (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenDefineSubj (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenDefineObj (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenDefinePred (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenCompare (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenIn (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenReadFile (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenFilePath (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)

@@ -40,9 +40,9 @@ import StqlTokens
     ';'    { TokenEnd _}
     path             {TokenFilePath _ $$}
     ReadFile         {TokenReadFile _ }
-    GetVars           {TokenGetVar _ }
+    GetVars          {TokenGetVar _ }
     ReadEnv          { TokenReadEnv _ }
-    Format          { TokenFormat _ }
+    Format           { TokenFormat _ }
     FillPrefix       { TokenFillPrefix _ }
     FillBase         { TokenFillBase _ }
     Ready            { TokenReady _ }
@@ -51,6 +51,7 @@ import StqlTokens
     DefineSubj       { TokenDefineSubj _ }
     DefineObj        { TokenDefineObj _ }
     DefinePred       { TokenDefinePred _ }
+    Compare          { TokenCompare _ }
     In               { TokenIn _ }
 
 %left ';'
@@ -102,7 +103,7 @@ Exp : int                                       { TmInt $1 }
     | ReadFile path                             { TmReadTTLFile $2 }
     | GetVars var                               { TmGetVar $2 }
     | ReadEnv                                   { TmReadEnv }
-    | Format Exp                                    { TmFormat $2}
+    | Format Exp                                { TmFormat $2 }
     | FillPrefix var                            { TmFillPrefix $2}
     | FillBase var                              { TmFillBase $2}
     | Ready var                                 { TmReady $2}
@@ -111,6 +112,7 @@ Exp : int                                       { TmInt $1 }
     | DefineSubj Exp In var                     { TmDefineSubj $2 $4 }
     | DefineObj string In var                   { TmDefineObj $2 $4 }
     | DefinePred string In var                  { TmDefinePred $2 $4 }
+    | Compare string var In string var          { TmCompare $2 $3 $5 $6 }
 
 
 Type : Bool                     { TyBool } 
@@ -144,6 +146,7 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmProcSemic String | TmProcComma String
             | TmClear String StqlType | TmClearAll
             | TmDefineSubj Expr String | TmDefineObj String String | TmDefinePred String String
+            | TmCompare String String String String
             | TmEnd Expr Expr | TmEnd2 Expr
             | TmReadTTLFile String
     deriving (Show,Eq)

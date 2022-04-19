@@ -115,7 +115,7 @@ eval1 (TmClear x typ,env,k,r,p) = (TmString ("clear " ++ x),clear env x,k,r,p)
 eval1 (TmClearAll,env,k,r,p) = (TmString ("ClearAll excpet pre-load file"),clearAll env,k,r,p)
 
 -- Rule for read file evaluations Read a pre-stored file string
-eval1 (TmReadTTLFile s,env,k,r,p) = (TmVar ("FILE" ++ (s \\ ".ttl")),env,k,r,p)
+eval1 (TmReadTTLFile s,env,k,r,p) = (TmVar (s),env,k,r,p)
 
 -- Evaluation rules for plus number operator
 eval1 (TmAdd e1 e2,env,k,r,p) = (e1,env,HAdd e2 env:k,r,p)
@@ -176,14 +176,16 @@ eval1 (TmDefineSubj (TmString subj) x, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = pcDefineSubj (subj \\ ['\"','\"']) (socToList (varStr x env))
 eval1 (TmDefineSubj (TmVar subj) x, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = pcDefineSubj (unparse (getValueBinding subj env) \\ ['\"','\"']) (socToList (varStr x env))
+eval1 (TmDefineSubj _ _, env,k,r,p) = error ""
 -- Evaluation rules for DefineObj blocks
 eval1 (TmDefineObj obj x, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = pcDefineObj (obj \\ ['\"','\"']) (socToList (varStr x env))
 -- Evaluation rules for DefinePred blocks
 eval1 (TmDefinePred pred x, env,k,r,p) = (TmString s', env,k,r,p)
-                           where s' = pcDefinePred (pred \\ ['\"','\"']) (socToList (varStr x env))                          
-
-
+                           where s' = pcDefinePred (pred \\ ['\"','\"']) (socToList (varStr x env))
+-- Evaluation rules for Compare blocks
+eval1 (TmCompare s1 f1 s2 f2, env,k,r,p) = (TmString s', env,k,r,p)
+                           where s' = pcCompare (rmQuo s1) (socToList (varStr f1 env)) (rmQuo s2) (socToList (varStr f2 env))
 
 -- Rule for runtime errors
 eval1 (e,env,k,r,p) = error "Unknown Evaluation Error"
@@ -201,11 +203,20 @@ pcDefineSubj :: String -> [String] -> String
 pcDefineSubj subj s | "\n" `isInfixOf` subj = unlines $ nub [ r | r <- s , r' <- wordsWhen (=='\n') subj, r' `isInfixOf` r]
                     | otherwise = unlines [ r | r <- s , subj `isInfixOf` r]
 --适用于DefineObj函数
+--take 6是因为只要求判断true
 pcDefineObj :: String -> [String] -> String
 pcDefineObj obj s = unlines [ r | r <- s , obj `isInfixOf` reverse (take 6 (reverse r)) ]
-
+--适用于DefinePred函数
 pcDefinePred :: String -> [String] -> String
 pcDefinePred pred s = unlines [ r | r <- s , pred `isInfixOf` r]
+
+--因为已经验证过了有3个，所以！！不会抛出错误
+pcCompare :: String -> [String] -> String -> [String] -> String
+pcCompare s1 f1 s2 f2 | s1 == "Obj" && s2 == "Subj" = unlines $ nub $ [r1 |
+                                                      r1 <- f1, length (filter (== '<') r1) == 3,
+                                                      r2 <- f2, length (filter (== '<') r2) == 3,
+                                                      wordsWhen (== '>') r1 !! 2 == head (wordsWhen (== '>') r2)]
+                      | otherwise = "暂未匹配此功能"
 
 --适用于Format函数，用于去除空格，格式化结尾，以及去除重复
 --还有判断结尾是否语义重复
@@ -326,13 +337,13 @@ rmLast s x = reverse $ reverse s \\ x
 --用于ReadEnv语法
 --TODO：只能检测字符串，其他格式抛出错误
 listEnv :: Environment -> String
-listEnv env = unlines [ s ++ "是" ++ unparse e | (s,e) <- env, s /= "FILEfoo" && s /= "FILEbar"]
+listEnv env = unlines [ s ++ "是" ++ unparse e | (s,e) <- env, s /= "foo.ttl" && s /= "bar.ttl"]
 --用于Clear语法
 clear :: Environment -> String -> Environment
 clear env x = [ (y,e2) | (y,e2) <- env, x /= y ]
 --用于ClearAll语法
 clearAll :: Environment -> Environment
-clearAll env = [ (y,e2) | (y,e2) <- env, y == "FILEfoo" || y == "FILEbar" ]
+clearAll env = [ (y,e2) | (y,e2) <- env, y == "foo.ttl" || y == "bar.ttl" ]
 
 {-------------------------------------------------------------------------------------------
 --tools and check function
@@ -429,7 +440,7 @@ split delim str =
 -}
 --Function to iterate the small step reduction to termination
 evalLoop :: String -> String -> Expr -> [Expr]
-evalLoop bar foo e = eval (e,[("FILEbar",TmString bar),("FILEfoo",TmString foo)],[],[],[])
+evalLoop bar foo e = eval (e,[("bar.ttl",TmString bar),("foo.ttl",TmString foo)],[],[],[])
 eval :: (Expr, Environment, Kontinuation, Result, Processing) -> [Expr]
 eval (e,env,k,r,p) | e' == e && isValue e' && null k && null p  = r'
                    | otherwise                                  = eval (e',env',k',r',p')
