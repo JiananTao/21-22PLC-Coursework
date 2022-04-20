@@ -14,6 +14,7 @@ tokens :-
 $white+       ; 
   "--".*        ; 
   Bool           { tok (\p s -> TokenTypeBool p)} 
+  LiteralsNum    { tok (\p s -> TokenLiteralsNum p) }
   Int            { tok (\p s -> TokenTypeInt p) }
   String         { tok (\p s -> TokenTypeString p) }
   Unit           { tok (\p s -> TokenTypeUnit p)}
@@ -116,6 +117,7 @@ data StqlToken =
   TokenDefinePred AlexPosn       |
   TokenCompare AlexPosn          |
   TokenIn AlexPosn               |
+  TokenLiteralsNum AlexPosn      |
   TokenReadEnv AlexPosn
   deriving (Eq,Show) 
 
@@ -164,6 +166,7 @@ tokenPosn (TokenDefineObj (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenDefinePred (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenCompare (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenIn (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenLiteralsNum (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenReadFile (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenFilePath (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 }

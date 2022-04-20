@@ -53,6 +53,7 @@ import StqlTokens
     DefinePred       { TokenDefinePred _ }
     Compare          { TokenCompare _ }
     In               { TokenIn _ }
+    LiteralsNum      { TokenLiteralsNum _ }
 
 %left ';'
 %left arr
@@ -113,6 +114,7 @@ Exp : int                                       { TmInt $1 }
     | DefineObj string In var                   { TmDefineObj $2 $4 }
     | DefinePred string In var                  { TmDefinePred $2 $4 }
     | Compare string var In string var          { TmCompare $2 $3 $5 $6 }
+    | LiteralsNum var                           { TmLiteralsNum $2 }
 
 
 Type : Bool                     { TyBool } 
@@ -145,6 +147,7 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmFillPrefix String | TmFillBase String | TmReady String
             | TmProcSemic String | TmProcComma String
             | TmClear String StqlType | TmClearAll
+            | TmLiteralsNum String
             | TmDefineSubj Expr String | TmDefineObj String String | TmDefinePred String String
             | TmCompare String String String String
             | TmEnd Expr Expr | TmEnd2 Expr

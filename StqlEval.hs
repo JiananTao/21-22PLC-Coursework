@@ -186,6 +186,9 @@ eval1 (TmDefinePred pred x, env,k,r,p) = (TmString s', env,k,r,p)
 -- Evaluation rules for Compare blocks
 eval1 (TmCompare s1 f1 s2 f2, env,k,r,p) = (TmString s', env,k,r,p)
                            where s' = pcCompare (rmQuo s1) (socToList (varStr f1 env)) (rmQuo s2) (socToList (varStr f2 env))
+-- Evaluation rules for LiteralsNum blocks
+eval1 (TmLiteralsNum s, env,k,r,p) = (TmString s', env,k,r,p)
+                           where s' = pcLiteralsNum (socToList (varStr s env))
 
 -- Rule for runtime errors
 eval1 (e,env,k,r,p) = error "Unknown Evaluation Error"
@@ -209,7 +212,7 @@ pcDefineObj obj s = unlines [ r | r <- s , obj `isInfixOf` reverse (take 6 (reve
 --适用于DefinePred函数
 pcDefinePred :: String -> [String] -> String
 pcDefinePred pred s = unlines [ r | r <- s , pred `isInfixOf` r]
-
+--适用于Compare函数
 --因为已经验证过了有3个，所以！！不会抛出错误
 pcCompare :: String -> [String] -> String -> [String] -> String
 pcCompare s1 f1 s2 f2 | s1 == "Obj" && s2 == "Subj" = unlines $ nub $ [r1 |
@@ -217,7 +220,26 @@ pcCompare s1 f1 s2 f2 | s1 == "Obj" && s2 == "Subj" = unlines $ nub $ [r1 |
                                                       r2 <- f2, length (filter (== '<') r2) == 3,
                                                       wordsWhen (== '>') r1 !! 2 == head (wordsWhen (== '>') r2)]
                       | otherwise = "暂未匹配此功能"
-
+--适用于LiteralsNum函数
+pcLiteralsNum :: [String] -> String
+pcLiteralsNum s = (unlines $ sort $ [ r'' |
+                  (r1,r2,r3,r') <- splitTriples s, ifHasDigit r3,
+                  readInt r3 < 0 || readInt r3 > 99,
+                  let r'' = r1 ++ " <http://www.cw.org/problem5/#inRange> false ."
+                  ]) ++ (
+                  unlines $ sort $ [ r'' |
+                  (r1,r2,r3,r') <- splitTriples s, ifHasDigit r3,
+                  readInt r3 >= 0 && readInt r3 <= 99,
+                  let r'' = r1 ++ r2 ++ show ((readInt r3) + 1) ++ "\n" ++ r1 ++ " <http://www.cw.org/problem5/#inRange> true ."
+                  ])
+splitTriples :: [String] -> [(String,String,String,String)]
+splitTriples l = [ (r1,r2,r3,r') | s <- l, let s' = filter (/=' ') s,
+                                         let i3 = rmMaybe (elemIndex '>' (reverse s')),
+                                         let r3 = init $ reverse ( take i3 (reverse s')),
+                                         let i1 = rmMaybe (elemIndex '>' s'),
+                                         let r1 = init $ take (i1+2) s',
+                                         let r2 = init ((s' \\ r3) \\ r1),
+                                         let r' = r1 ++ r2 ++ r3]
 --适用于Format函数，用于去除空格，格式化结尾，以及去除重复
 --还有判断结尾是否语义重复
 -- *除了50，20，10外其他数字有未知bug，可能是空格不对
@@ -285,7 +307,8 @@ procFillBa' s env = concat [ r' | r <- split "<" s, let r' = case isInfixOf "htt
 getNeedFillPr :: [String] -> [String]
 getNeedFillPr l = [ s | s <- l, not ("http://" `isInfixOf` s) && isInfixOf ":" s && not ("@" `isInfixOf` s)]
 procFillPr :: [Char] -> Environment -> String -> String
-procFillPr s env sum | isNothing (elemIndex ':' (s \\ ":"))  = (init $ init (replace ".>" ">.\n" (filter (/=' ') (sum ++ beFill i i' s env)))) ++ ">."
+procFillPr s env sum | s == "" = ""
+                     | isNothing (elemIndex ':' (s \\ ":"))  = (init $ init (replace ".>" ">.\n" (filter (/=' ') (sum ++ beFill i i' s env)))) ++ ">."
                      | otherwise  = procFillPr s' env (sum ++ beFill i i' s env)
                 where
                   s' = drop (rmMaybe i') s
@@ -363,6 +386,7 @@ ifHasDigit s = not $ null [ r | r <- s, isDigit r]
 --TODO:bug不能用filter
 readInt :: String -> Int
 readInt s | eqString s "+" = read (tail s)
+          | eqString s "-" = negate (read (tail s))
           | otherwise      = read s
           where s' = filter (==' ') s
 rmMaybe :: Maybe a -> a
