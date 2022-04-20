@@ -17,8 +17,7 @@ $white+       ;
   LiteralsNum    { tok (\p s -> TokenLiteralsNum p) }
   Int            { tok (\p s -> TokenTypeInt p) }
   String         { tok (\p s -> TokenTypeString p) }
-  Unit           { tok (\p s -> TokenTypeUnit p)}
-  "->"           { tok (\p s -> TokenTypeArr p) }
+--  Unit           { tok (\p s -> TokenTypeUnit p)}
   \,             { tok (\p s -> TokenComma p) }
   $digit+        { tok (\p s -> TokenInt p (read s)) }
   true           { tok (\p s -> TokenTrue p) }
@@ -26,12 +25,11 @@ $white+       ;
   "++"           { tok (\p s -> TokenPlusString p) }    
   PlusASort      { tok (\p s -> TokenPlusASort p )}      
   \+             { tok (\p s -> TokenPlus p) }
-  If             { tok (\p s -> TokenIf p) }
-  Then           { tok (\p s -> TokenThen p) }
-  Else           { tok (\p s -> TokenElse p) }
-  fst            { tok (\p s -> TokenFst p) }
-  snd            { tok (\p s -> TokenSnd p) }
-  \\             { tok (\p s -> TokenLambda p) }
+--  If             { tok (\p s -> TokenIf p) }
+--  Then           { tok (\p s -> TokenThen p) }
+--  Else           { tok (\p s -> TokenElse p) }
+--  fst            { tok (\p s -> TokenFst p) }
+--  snd            { tok (\p s -> TokenSnd p) }
   \:             { tok (\p s -> TokenHasType p) }
   ClearAll       { tok (\p s -> TokenClearAll p )}
   Clear          { tok (\p s -> TokenClear p )}
@@ -75,8 +73,7 @@ data StqlToken =
   TokenTypeBool AlexPosn         | 
   TokenTypeInt  AlexPosn         | 
   TokenTypeString  AlexPosn      |
-  TokenTypeUnit AlexPosn         |
-  TokenTypeArr  AlexPosn         |
+--  TokenTypeUnit AlexPosn         |
   TokenInt AlexPosn Int          | 
   TokenString AlexPosn String    |
   TokenTrue AlexPosn             |
@@ -84,12 +81,11 @@ data StqlToken =
   TokenPlus AlexPosn             |
   TokenPlusString AlexPosn       |
   TokenPlusASort AlexPosn        |
-  TokenIf AlexPosn               |
-  TokenThen AlexPosn             |
-  TokenElse AlexPosn             |
-  TokenFst AlexPosn              |
-  TokenSnd AlexPosn              |
-  TokenLambda AlexPosn           |
+--  TokenIf AlexPosn               |
+--  TokenThen AlexPosn             |
+--  TokenElse AlexPosn             |
+--  TokenFst AlexPosn              |
+--  TokenSnd AlexPosn              |
   TokenHasType AlexPosn          |
   TokenLet AlexPosn              |
   TokenPrint AlexPosn            |
@@ -125,8 +121,7 @@ tokenPosn :: StqlToken -> String
 tokenPosn (TokenTypeBool (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenTypeInt  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenTypeString  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenTypeUnit  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenTypeArr  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+--tokenPosn (TokenTypeUnit  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenInt  (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenString  (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenTrue  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
@@ -134,11 +129,11 @@ tokenPosn (TokenFalse  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenPlus  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenPlusString  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenPlusASort  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenIf (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenThen (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenElse (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenFst (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenSnd (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+--tokenPosn (TokenIf (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+--tokenPosn (TokenThen (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+--tokenPosn (TokenElse (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+--tokenPosn (TokenFst (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+--tokenPosn (TokenSnd (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenHasType (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenLet (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenGetVar (AlexPn a l c)) = show(l) ++ ":" ++ show(c)

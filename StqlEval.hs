@@ -63,8 +63,8 @@ isValue (TmString _) = True
 isValue (TmInt _) = True
 isValue TmTrue = True
 isValue TmFalse = True
-isValue TmUnit = True
-isValue (TmPair e1 e2) = isValue e1 && isValue e2
+--isValue TmUnit = True
+--isValue (TmPair e1 e2) = isValue e1 && isValue e2
 isValue _ = False
 
 {-
@@ -132,22 +132,24 @@ eval1 (TmList e,env,k,r,p) = (e,env,k ++ [List],r,p)
 eval1 (TmListSeg e1 e2,env,k,r,p) = (e2,env,HList e1 env:k,r,p)
 eval1 (TmString n,env1,(HList e env2):k,r,p) = (e,env2 ++ env1,ListH (TmString (rmQuo n)) : k,r,p)
 eval1 (TmString m,env,(ListH (TmString n)):k,r,p) = (TmString (n ++ "\n" ++ rmQuo m),env,k,r,p)
-
+{-
 -- Evaluation rules for projections
 eval1 (TmFst e1,env,k,r,p) = (e1,env, FstH : k,r,p)
 eval1 (TmSnd e1,env,k,r,p) = (e1,env, SndH : k,r,p)
 eval1 (TmPair v w,env, FstH:k,r,p) | isValue v && isValue w = ( v , env , k,r,p)
 eval1 (TmPair v w,env, SndH:k,r,p) | isValue v && isValue w = ( w , env , k,r,p)
-
--- Evaluation rules for pairs
-eval1 (TmPair e1 e2,env,k,r,p) = (e1,env,HPair e2 env:k,r,p)
-eval1 (v,env1,(HPair e env2):k,r,p) | isValue v = (e,env2 ++ env1,PairH v : k,r,p)
-eval1 (w,env,(PairH v):k,r,p) | isValue w = ( TmPair v w,env,k,r,p)
-
 -- Evaluation rules for if-then-else
 eval1 (TmIf e1 e2 e3,env,k,r,p) = (e1,env,HIf e2 e3 env:k,r,p)
 eval1 (TmTrue,env1,(HIf e2 e3 env2):k,r,p) = (e2,env2 ++ env1,k,r,p)
 eval1 (TmFalse,env1,(HIf e2 e3 env2):k,r,p) = (e3,env2 ++ env1,k,r,p)
+-- Evaluation rules for pairs
+eval1 (TmPair e1 e2,env,k,r,p) = (e1,env,HPair e2 env:k,r,p)
+eval1 (v,env1,(HPair e env2):k,r,p) | isValue v = (e,env2 ++ env1,PairH v : k,r,p)
+eval1 (w,env,(PairH v):k,r,p) | isValue w = ( TmPair v w,env,k,r,p)
+-}
+
+
+
 
 -- Evaluation rules for Let blocks
 eval1 (TmGetVar s,env,k,r,p) = (TmString "已导入var",env',k,r,p)
@@ -471,7 +473,7 @@ unparse (TmString n) =  n
 unparse (TmInt n) = show n
 unparse TmTrue = "true"
 unparse TmFalse = "false"
-unparse TmUnit = "()"
+--unparse TmUnit = "()"
 unparse (TmPair e1 e2) = "( " ++ unparse e1 ++ " , " ++ unparse e2 ++ " )"
 unparse _ = "Unknown"
 unparseAll :: [Expr] -> [String]

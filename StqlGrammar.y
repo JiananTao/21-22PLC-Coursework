@@ -10,8 +10,7 @@ import StqlTokens
     Bool   { TokenTypeBool _ } 
     Int    { TokenTypeInt _ } 
     String { TokenTypeString _ }
-    Unit   { TokenTypeUnit _ }
-    arr    { TokenTypeArr _ } 
+--    Unit   { TokenTypeUnit _ }
     int    { TokenInt _ $$ }
     string { TokenString _ $$ } 
     true   { TokenTrue _ }
@@ -20,11 +19,11 @@ import StqlTokens
     PlusASort { TokenPlusASort _ }
     '+'    { TokenPlus _ }
     var    { TokenVar _ $$ }
-    If     { TokenIf _ }
-    Then   { TokenThen _ }
-    Else   { TokenElse _ }
-    fst    { TokenFst _ }
-    snd    { TokenSnd _ }
+--    If     { TokenIf _ }
+--    Then   { TokenThen _ }
+--    Else   { TokenElse _ }
+--    fst    { TokenFst _ }
+--    snd    { TokenSnd _ }
     Let    { TokenLet _ }
     Print  { TokenPrint _ }
     Clear  { TokenClear _ }
@@ -56,7 +55,6 @@ import StqlTokens
     LiteralsNum      { TokenLiteralsNum _ }
 
 %left ';'
-%left arr
 %left '['
 %right Let
 %right ClearAll
@@ -65,10 +63,10 @@ import StqlTokens
 %right Format
 %right Print
 %right '='
-%nonassoc If
-%nonassoc Then
-%nonassoc Else
-%left fst snd
+--%nonassoc If
+--%nonassoc Then
+--%nonassoc Else
+--%left fst snd
 %left '+'
 %left '++'
 %left PlusASort
@@ -84,16 +82,16 @@ Exp : int                                       { TmInt $1 }
     | var                                       { TmVar $1 }
     | true                                      { TmTrue }
     | false                                     { TmFalse } 
-    | '('')'                                    { TmUnit }
+--    | '('')'                                    { TmUnit }
     | '(' Exp ',' Exp ')'                       { TmPair $2 $4 }
     | '[' Exp ']'                               { TmList $2 }
     | Exp '|' Exp                               { TmListSeg $1 $3 }
     | Exp '++' Exp                              { TmAddString $1 $3 }
     | Exp PlusASort Exp                         { TmPlusASort $1 $3 }
     | Exp '+' Exp                               { TmAdd $1 $3 }
-    | fst Exp                                   { TmFst $2 }
-    | snd Exp                                   { TmSnd $2 }
-    | If Exp Then Exp Else Exp                  { TmIf $2 $4 $6 } 
+--    | fst Exp                                   { TmFst $2 }
+--    | snd Exp                                   { TmSnd $2 }
+--    | If Exp Then Exp Else Exp                  { TmIf $2 $4 $6 } 
     | Let '(' var ':' Type ')' '=' Exp          { TmLet $3 $5 $8 }
     | Clear '(' var ':' Type ')'                { TmClear $3 $5 }
     | ClearAll                                  { TmClearAll }
@@ -120,9 +118,8 @@ Exp : int                                       { TmInt $1 }
 Type : Bool                     { TyBool } 
      | Int                      { TyInt } 
      | String                   { TyString }
-     | Unit                     { TyUnit }
-     | '(' Type ',' Type ')'    { TyPair $2 $4 }
-     | Type arr Type            { TyFun $1 $3 } 
+--     | Unit                     { TyUnit }
+--     | '(' Type ',' Type ')'    { TyPair $2 $4 }
 
 --只支持string目前
 --List : string '|' string                               { TmListSeg $1 $3 }
@@ -132,15 +129,18 @@ Type : Bool                     { TyBool }
 parseError :: [StqlToken] -> a
 parseError [] = error "Unknown Parse Error" 
 parseError (t:ts) = error ("Parse error at line:column " ++ (tokenPosn t))
-
-data StqlType = TyInt | TyString | TyBool | TyUnit | TyPair StqlType StqlType | TyFun StqlType StqlType
+-- | TyUnit
+data StqlType = TyInt | TyString | TyBool | TyPair StqlType StqlType | TyFun StqlType StqlType
    deriving (Show,Eq)
 
 type Environment = [ (String,Expr) ]
-data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit 
+data Expr = TmInt Int | TmString String | TmTrue | TmFalse 
+--          | TmUnit 
             | TmPair Expr Expr | TmAdd Expr Expr | TmVar String 
-            | TmFst Expr | TmSnd Expr | TmAddString Expr Expr
-            | TmIf Expr Expr Expr | TmLet String StqlType Expr
+--            | TmFst Expr | TmSnd Expr 
+            | TmAddString Expr Expr
+--            | TmIf Expr Expr Expr 
+            | TmLet String StqlType Expr
             | TmList Expr | TmListSeg Expr Expr
             | TmPrint Expr | TmPlusASort Expr Expr
             | TmGetVar String | TmReadEnv | TmFormat Expr
