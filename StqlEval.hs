@@ -230,39 +230,24 @@ pcLiteralsNum s = (unlines $ sort $ [ r'' |
                   unlines $ sort $ [ r'' |
                   (r1,r2,r3,r') <- splitTriples s, ifHasDigit r3,
                   readInt r3 >= 0 && readInt r3 <= 99,
-                  let r'' = r1 ++ r2 ++ show ((readInt r3) + 1) ++ "\n" ++ r1 ++ " <http://www.cw.org/problem5/#inRange> true ."
+                  let r'' = r1 ++ r2 ++ show (readInt r3 + 1) ++ "\n" ++ r1 ++ " <http://www.cw.org/problem5/#inRange> true ."
                   ])
-splitTriples :: [String] -> [(String,String,String,String)]
-splitTriples l = [ (r1,r2,r3,r') | s <- l, let s' = filter (/=' ') s,
-                                         let i3 = rmMaybe (elemIndex '>' (reverse s')),
-                                         let r3 = init $ reverse ( take i3 (reverse s')),
-                                         let i1 = rmMaybe (elemIndex '>' s'),
-                                         let r1 = init $ take (i1+2) s',
-                                         let r2 = init ((s' \\ r3) \\ r1),
-                                         let r' = r1 ++ r2 ++ r3]
 --适用于Format函数，用于去除空格，格式化结尾，以及去除重复
 --还有判断结尾是否语义重复
 -- *除了50，20，10外其他数字有未知bug，可能是空格不对
 --fromResult会返回完美格式的结果，fromResult‘是对语义相同项的处理
 --   .
 formatResultF :: [String] -> [String]
-formatResultF l = sort $ nub $ [  reverse r'' | r <- formatResult' (formatResult l), let r' = reverse (rmLast r "." ++ "."),
-                        let r'' = replace "  " " " $ replaceFirst '.' ". " $ replaceFirst '>' " >" r']
+formatResultF l = sort $ nub $ [ r' | r <- formatResult' (formatResult l),
+                        let r' = replace "  " " " r]
 formatResult :: [String] -> [String]
 formatResult l = nub [ s'' | s <- l, let s' = replace ". " "" (filter (/=' ') s ++ "  ."),
                                      let s'' = replace "  " " " $ reverse (replaceFirst  '>' " >" (reverse s'))]
 
-formatResult' :: [String] -> [String ]
-formatResult' l =  sort $ [ r' | (r1,r2,r3) <- semanticRepetition l, ifHasDigit r1, let r' = r2 ++ show (readInt r1)] ++ [ r3 | (r1,r2,r3) <- semanticRepetition l, not $ ifHasDigit r1]
--- 将完整文件行拆分成值r1，值前r2，全reverse s'
--- r1 = true .
--- r2  = <http://www.cw.org/#problem2><http://www.cw.org/testPredB>
--- reverse s' = <http://www.cw.org/#problem2><http://www.cw.org/testPredB> true.
-semanticRepetition :: [String] -> [(String,String,String)]
-semanticRepetition l = [ (r1,r2,reverse s') | s <- l, let s' = filter (/=' ') (reverse s),
-                                         let i = rmMaybe (elemIndex '>' s'),
-                                         let r1 = init $ reverse ( take i s'),
-                                         let r2 = (reverse s') \\ r1]
+formatResult' :: [String] -> [String]
+formatResult' l =  sort $ [ r' | (r1,r2,r3,rr) <- splitTriples l, ifAllDigit r3, let r' = r1 ++ r2 ++ " " ++ show (readInt r3) ++ " ."] 
+                   ++ [ rr | (r1,r2,r3,rr) <- splitTriples l, not $ ifAllDigit r3]
+--formatResult' l =  sort $ [ r' | (r1,r2,r3,rr) <- splitTriples l, ifAllDigit r3, let r' = r1 ++ r2 ++ show (readInt r3)] ++ [ rr | (r1,r2,r3,rr) <- splitTriples l, not $ ifAllDigit r3]
 
 
 
@@ -374,6 +359,15 @@ clearAll env = [ (y,e2) | (y,e2) <- env, y == "foo.ttl" || y == "bar.ttl" ]
 --
 --
 -}
+splitTriples :: [String] -> [(String,String,String,String)]
+splitTriples l = [ (r1,r2,r3,r') | s <- l, let s' = filter (/=' ') s,
+                                         let i3 = rmMaybe (elemIndex '>' (reverse s')),
+                                         let r3 = init $ reverse ( take i3 (reverse s')),
+                                         let i1 = rmMaybe (elemIndex '>' s'),
+                                         let r1 = init $ take (i1+2) s',
+                                         let r2 = filter (/=' ') (init $ reverse ((reverse (replace r1 "" s)) \\ (reverse r3))),
+                                         let r' = r1 ++ r2 ++ " " ++ r3 ++ " ."]
+
 rmQuo :: String -> String
 rmQuo [] = ""
 rmQuo s =  if (head s == '\"') && (last s == '\"') then init (tail s) else s
@@ -383,6 +377,8 @@ replaceFirst old new s = take (i) s ++ new ++ snd (splitAt (i+1) s)
                         where i = rmMaybe (elemIndex old s)
 ifHasDigit :: String  -> Bool
 ifHasDigit s = not $ null [ r | r <- s, isDigit r]
+ifAllDigit :: String  -> Bool
+ifAllDigit s = not (null ([ r | r <- s])) && (length [ r | r <- s]) == length ([ r | r <- s, isDigit r || (r == '+') || (r == '-')])
 --TODO:bug不能用filter
 readInt :: String -> Int
 readInt s | eqString s "+" = read (tail s)
