@@ -32,9 +32,7 @@ import StqlTokens
     GetVars          {TokenGetVar _ }
     ReadEnv          { TokenReadEnv _ }
     Format           { TokenFormat _ }
-    FillPrefix       { TokenFillPrefix _ }
-    FillBase         { TokenFillBase _ }
-    Ready            { TokenReady _ }
+    FillBasePrefixReady       { TokenFillBasePrefixReady _ }
     ProcSemic        { TokenProcSemic _ }
     ProcComma        { TokenProcComma _ }
     Delimit          { TokenDelimit _ }
@@ -93,9 +91,7 @@ Exp : int                                       { TmInt $1 }
     | GetVars var                               { TmGetVar $2 }
     | ReadEnv                                   { TmReadEnv }
     | Format Exp                                { TmFormat $2 }
-    | FillPrefix var                            { TmFillPrefix $2}
-    | FillBase var                              { TmFillBase $2}
-    | Ready var                                 { TmReady $2}
+    | FillBasePrefixReady var                            { TmFillBasePrefixReady $2}
     | ProcSemic var                             { TmProcSemic $2}
     | ProcComma var                             { TmProcComma $2}
     | Delimit string Exp In var                 { TmDelimit $2 $3 $5 }
@@ -136,7 +132,7 @@ data Expr = TmInt Int | TmString String
             | TmList Expr | TmListSeg Expr Expr
             | TmPrint Expr | TmPlusVar Expr Expr
             | TmGetVar String | TmReadEnv | TmFormat Expr
-            | TmFillPrefix String | TmFillBase String | TmReady String
+            | TmFillBasePrefixReady String 
             | TmProcSemic String | TmProcComma String
             | TmClear String StqlType | TmClearAll
             | TmLiteralsNum String

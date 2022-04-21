@@ -178,12 +178,12 @@ eval1 (TmProcComma s, env,k,r,p) = (TmString s',env,k,r,p)
 eval1 (TmProcSemic s, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = unlines ( procProcSemic (getNeedProcSemic (socToList (varStr s env)))
                                                 ++ getNeedProcSemic' (socToList (varStr s env)))
-eval1 (TmFillPrefix s, env,k,r,p) = (TmString s',env,k,r,p)
+-- Evaluation rules for FillBasePrefixReady Function blocks
+eval1 (TmFillBasePrefixReady s, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = procFillPr (unlines (getNeedFillPr (socToList (varStr s env)))) env ""
-eval1 (TmFillBase s, env,k,r,p) = (TmString s',env,k,r,p)
-                           where s' = procFillBa (unlines (getNeedFillBa (socToList (varStr s env)))) env
-eval1 (TmReady s, env,k,r,p) = (TmString s',env,k,r,p)
-                           where s' = unlines (getNeedReady (socToList (varStr s env)))
+                                   ++ "\n" ++ procFillBa (unlines (getNeedFillBa (socToList (varStr s env)))) env
+                                   ++ "\n" ++ unlines (getNeedReady (socToList (varStr s env)))
+
 -- Evaluation rules for Delimit blocks
 eval1 (TmDelimit pos s x, env,k,r,p) | rmQuo pos == "Subj" && whichExp s == "String" = 
                         let s' = pcDelimit 1 (rmQuo (unparse s) ) (socToList (varStr x env)) in (TmString s',env,k,r,p)
@@ -296,10 +296,11 @@ procProcSemic l = concat $ procProcSemic' [ (s1,s2) | s <- l, let s1 = fst $ bre
 procProcSemic' :: [(String,String)] -> [[String]]
 procProcSemic' l = [ s | (s1,s2) <- l, let s = map (s1++) (split ";" s2)]
 
---适用于Ready函数, 例: <http://www.cw.org/subjectA> <http://www.cw.org/predicateA> <http://www.cw.org/objectA> . 
+--适用于FillBasePrefixReady函数
+--Ready模块, 例: <http://www.cw.org/subjectA> <http://www.cw.org/predicateA> <http://www.cw.org/objectA> . 
 getNeedReady :: [String] -> [String]
 getNeedReady l = [ s | s <- l, length (split "http://" s) == 4]
---适用于FillBase函数, 例: <prob4B> <testPredA> <prob4C> .
+--适用于FillBase模块, 例: <prob4B> <testPredA> <prob4C> .
 --例: <http://www.cw.org/#problem2> <testPredA> true .
 getNeedFillBa :: [String] -> [String]
 getNeedFillBa l = [ s | s <- l, (length (split "http://" s) <= 2) && (isInfixOf ">") s && (not ("/>" `isInfixOf` s))]
@@ -311,8 +312,7 @@ procFillBa' s env = concat [ r' | r <- split "<" s, let r' = case isInfixOf "htt
                                                                      _     -> case not (isInfixOf "http://" r) && (isInfixOf ">" r) of
                                                                          True -> (varStr "BaseVar" env \\ ">") ++ r
                                                                          False -> r]
-
---适用于FillPrefix函数, 例: p:subjectC
+--适用于FillPrefix模块, 例: p:subjectC
 --s 为一整个文件的字符串, 通过在
 getNeedFillPr :: [String] -> [String]
 getNeedFillPr l = [ s | s <- l, not ("http://" `isInfixOf` s) && isInfixOf ":" s && not ("@" `isInfixOf` s)]

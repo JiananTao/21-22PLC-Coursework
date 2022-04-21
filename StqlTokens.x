@@ -35,15 +35,13 @@ tokens :-
   GetVars        { tok (\p s -> TokenGetVar p) }
   ReadEnv        { tok (\p s -> TokenReadEnv p) }
   Format         { tok (\p s -> TokenFormat p) }
-  FillPrefix     { tok (\p s -> TokenFillPrefix p) }
-  FillBase       { tok (\p s -> TokenFillBase p) }
-  Ready          { tok (\p s -> TokenReady p) }
   ProcSemic      { tok (\p s -> TokenProcSemic p) }
   ProcComma      { tok (\p s -> TokenProcComma p) }
   Delimit        { tok (\p s -> TokenDelimit p) }
   In             { tok (\p s -> TokenIn p) }
   Compare        { tok (\p s -> TokenCompare p) }
   LiteralsNum    { tok (\p s -> TokenLiteralsNum p) }
+  FillBasePrefixReady     { tok (\p s -> TokenFillBasePrefixReady p) }
   [$alpha $digit \_ \']*.ttl    { tok (\p s -> TokenFilePath p s) }
   \"$algit*\"    { tok (\p s -> TokenString p s) }
   $alpha [$alpha $digit \_ \’]*      { tok (\p s -> TokenVar p s) }
@@ -74,7 +72,7 @@ data StqlToken =
   TokenString AlexPosn String    |
   TokenPlus AlexPosn             |
   TokenPlusString AlexPosn       |
-  TokenPlusVar AlexPosn        |
+  TokenPlusVar AlexPosn          |
   TokenHasType AlexPosn          |
   TokenLet AlexPosn              |
   TokenPrint AlexPosn            |
@@ -90,9 +88,7 @@ data StqlToken =
   TokenReadFile AlexPosn         |
   TokenGetVar AlexPosn           |
   TokenFilePath AlexPosn String  |
-  TokenFillPrefix AlexPosn       |
-  TokenFillBase AlexPosn         |
-  TokenReady AlexPosn            |
+  TokenFillBasePrefixReady AlexPosn       |
   TokenProcSemic AlexPosn        | 
   TokenProcComma AlexPosn        | 
   TokenFormat AlexPosn           |
@@ -137,9 +133,7 @@ tokenPosn (TokenVar (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenEnd (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenReadEnv (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenFormat (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenFillPrefix (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenFillBase (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenReady (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenFillBasePrefixReady (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenProcSemic (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenProcComma (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenDelimit (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
