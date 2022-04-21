@@ -35,8 +35,7 @@ tokens :-
   GetVars        { tok (\p s -> TokenGetVar p) }
   ReadEnv        { tok (\p s -> TokenReadEnv p) }
   Format         { tok (\p s -> TokenFormat p) }
-  ProcSemic      { tok (\p s -> TokenProcSemic p) }
-  ProcComma      { tok (\p s -> TokenProcComma p) }
+  ProcSemicComma      { tok (\p s -> TokenProcSemicComma p) }
   Delimit        { tok (\p s -> TokenDelimit p) }
   In             { tok (\p s -> TokenIn p) }
   Compare        { tok (\p s -> TokenCompare p) }
@@ -89,8 +88,7 @@ data StqlToken =
   TokenGetVar AlexPosn           |
   TokenFilePath AlexPosn String  |
   TokenFillBasePrefixReady AlexPosn       |
-  TokenProcSemic AlexPosn        | 
-  TokenProcComma AlexPosn        | 
+  TokenProcSemicComma AlexPosn        | 
   TokenFormat AlexPosn           |
   TokenDelimit AlexPosn          |
   TokenCompare AlexPosn          |
@@ -134,8 +132,7 @@ tokenPosn (TokenEnd (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenReadEnv (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenFormat (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenFillBasePrefixReady (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenProcSemic (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenProcComma (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenProcSemicComma (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenDelimit (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenCompare (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenIn (AlexPn a l c)) = show(l) ++ ":" ++ show(c)

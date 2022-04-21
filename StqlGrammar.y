@@ -33,8 +33,7 @@ import StqlTokens
     ReadEnv          { TokenReadEnv _ }
     Format           { TokenFormat _ }
     FillBasePrefixReady       { TokenFillBasePrefixReady _ }
-    ProcSemic        { TokenProcSemic _ }
-    ProcComma        { TokenProcComma _ }
+    ProcSemicComma        { TokenProcSemicComma _ }
     Delimit          { TokenDelimit _ }
     Compare          { TokenCompare _ }
     In               { TokenIn _ }
@@ -92,8 +91,7 @@ Exp : int                                       { TmInt $1 }
     | ReadEnv                                   { TmReadEnv }
     | Format Exp                                { TmFormat $2 }
     | FillBasePrefixReady var                            { TmFillBasePrefixReady $2}
-    | ProcSemic var                             { TmProcSemic $2}
-    | ProcComma var                             { TmProcComma $2}
+    | ProcSemicComma var                             { TmProcSemicComma $2}
     | Delimit string Exp In var                 { TmDelimit $2 $3 $5 }
     | Compare string var In string var          { TmCompare $2 $3 $5 $6 }
     | LiteralsNum var                           { TmLiteralsNum $2 }
@@ -133,7 +131,7 @@ data Expr = TmInt Int | TmString String
             | TmPrint Expr | TmPlusVar Expr Expr
             | TmGetVar String | TmReadEnv | TmFormat Expr
             | TmFillBasePrefixReady String 
-            | TmProcSemic String | TmProcComma String
+            | TmProcSemicComma String 
             | TmClear String StqlType | TmClearAll
             | TmLiteralsNum String
             | TmDelimit String Expr String 

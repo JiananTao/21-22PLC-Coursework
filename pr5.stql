@@ -1,8 +1,7 @@
 --题目中说作为全部是one input file foo that contains a number of triples all of whose objects are Integer literals.
 --但这里考虑未知情况，并过滤只剩下数字
 Let (foo:String) = (ReadFile foo.ttl);
-Let (foo1:String) = (ProcSemic foo);
-Let (foo2:String) = (ProcComma foo1);
+Let (foo2:String) = (ProcSemicComma foo);
 GetVars foo2;
 Let (allF:String) = Format (FillBasePrefixReady foo2);
 Print (Format (LiteralsNum allF));

@@ -1,6 +1,5 @@
 Let (foo:String) = (ReadFile foo.ttl);
-Let (foo1:String) = (ProcSemic foo);
-Let (foo2:String) = (ProcComma foo1);
+Let (foo2:String) = (ProcSemicComma foo);
 GetVars foo2;
 Let (all:String) = Format (FillBasePrefixReady foo2);
 

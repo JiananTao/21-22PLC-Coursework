@@ -1,21 +1,18 @@
 --./Stql pr1.stql
 
 Let (foo:String) = (ReadFile foo.ttl);
-Let (foo1:String) = (ProcSemic foo);
-Let (foo2:String) = (ProcComma foo1);
+Let (foo2:String) = (ProcSemicComma foo);
 GetVars foo2;
 Let (allF2:String) = (FillBasePrefixReady foo2);
---Print (preF2 PlusVar basF2 PlusVar reaF2);
 Clear (p:String);
 Clear (s:String);
 Clear (t:String);
 
 Let (bar:String) = (ReadFile bar.ttl);
-Let (bar1:String) = (ProcSemic bar);
-Let (bar2:String) = (ProcComma bar1);
+Let (bar2:String) = (ProcSemicComma bar);
 GetVars bar2;
 Let (allB2:String) = (FillBasePrefixReady bar2);
-Print (Format (allF2 PlusVar allB2));
+Print (Format (allF2 ++ allB2));
 
 
 

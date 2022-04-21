@@ -172,12 +172,14 @@ eval1 (TmFormat e, env,k,r,p) = (e,env,Format:k,r,p)
 eval1 (TmString s,env,Format:k,r,p) = (TmString s',env,k,r,p)
                            where s' = unlines $ formatResultF (socToList s)
 
-eval1 (TmProcComma s, env,k,r,p) = (TmString s',env,k,r,p)
+eval1 (TmProcSemicComma s, env,k,r,p) = (TmString (s' ++ s''),env,k,r,p)
                            where s' = unlines ( procProcComma (getNeedProcComma (socToList (varStr s env)))
                                                 ++ getNeedProcComma' (socToList (varStr s env)))
-eval1 (TmProcSemic s, env,k,r,p) = (TmString s',env,k,r,p)
-                           where s' = unlines ( procProcSemic (getNeedProcSemic (socToList (varStr s env)))
+                                 s'' = unlines ( procProcSemic (getNeedProcSemic (socToList (varStr s env)))
                                                 ++ getNeedProcSemic' (socToList (varStr s env)))
+--eval1 (TmProcSemic s, env,k,r,p) = (TmString s',env,k,r,p)
+--                           where s' = unlines ( procProcSemic (getNeedProcSemic (socToList (varStr s env)))
+--                                                ++ getNeedProcSemic' (socToList (varStr s env)))
 -- Evaluation rules for FillBasePrefixReady Function blocks
 eval1 (TmFillBasePrefixReady s, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = procFillPr (unlines (getNeedFillPr (socToList (varStr s env)))) env ""
@@ -281,7 +283,7 @@ formatResult' l =  sort $ [ r' | (r1,r2,r3,rr) <- splitTriples l, ifAllDigit r3,
 getNeedProcComma :: [String] -> [String]
 getNeedProcComma l = [ s | s <- l, isInfixOf "," s]
 getNeedProcComma' :: [String] -> [String]
-getNeedProcComma' l = [ s | s <- l, not ( isInfixOf "," s)]
+getNeedProcComma' l = [ s | s <- l, not ( isInfixOf "," s) && not ( isInfixOf ";" s)]
 procProcComma :: [String] -> [String]
 procProcComma l = concat $ procProcComma' [ (s1,s2) | s <- l, let s' = s \\ " ", let s1 = fst $ break isSpace s', let s2 = snd $ break isSpace s']
 procProcComma' :: [(String,String)] -> [[String]]
@@ -290,7 +292,7 @@ procProcComma' l = [ s | (s1,s2) <- l, let s = map (s1++) (split "," s2)]
 getNeedProcSemic :: [String] -> [String]
 getNeedProcSemic l = [ s | s <- l, isInfixOf ";" s]
 getNeedProcSemic' :: [String] -> [String]
-getNeedProcSemic' l = [ s | s <- l, not ( isInfixOf ";" s)]
+getNeedProcSemic' l = [ s | s <- l, not ( isInfixOf "," s) && not ( isInfixOf ";" s)]
 procProcSemic :: [String] -> [String]
 procProcSemic l = concat $ procProcSemic' [ (s1,s2) | s <- l, let s1 = fst $ break isSpace s, let s2 = snd $ break isSpace s]
 procProcSemic' :: [(String,String)] -> [[String]]
