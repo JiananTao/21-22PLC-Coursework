@@ -58,7 +58,8 @@ getValueBinding x ((y,e):env) | x == y    = e
 getValueBinding' :: Expr -> Environment -> Expr
 getValueBinding' x [] = error "Variable binding not found"
 getValueBinding' (TmVar x) ((y,e):env) | x == y    = e
-                              | otherwise = getValueBinding x env
+                                       | otherwise = getValueBinding x env
+getValueBinding' _ _ = error ""
 
 update :: Environment -> String -> Expr -> Environment
 update env x e1 = (x,e1) : [ (y,e2) | (y,e2) <- env, x /= y ]
@@ -123,10 +124,11 @@ eval1 (v,env,(HLet x typ):k,r,p) | isValue v = (TmLet x typ v,env,k,r,p)
 
 -- Evaluation rules for Clear blocks
 eval1 (TmClear x typ,env,k,r,p) = (TmString ("clear " ++ x),clear env x,k,r,p)
-eval1 (TmClearAll,env,k,r,p) = (TmString ("ClearAll excpet pre-load file"),clearAll env,k,r,p)
+eval1 (TmClearAll,env,k,r,p) = (TmString "ClearAll excpet pre-load file",clearAll env,k,r,p)
 
 -- Rule for read file evaluations Read a pre-stored file string
-eval1 (TmReadTTLFile s,env,k,r,p) = (TmVar (s),env,k,r,p)
+eval1 (TmReadTTLFile s,env,k,r,p) | s /= "\"bar.ttl\"" && s /= "\"foo.ttl\"" = error "Only supports reading foo.ttl and bar.ttl"
+                                  | otherwise                                = (TmVar (rmQuo s),env,k,r,p)
 
 -- Evaluation rules for plus number operator
 eval1 (TmAdd e1 e2,env,k,r,p) = (e1,env,HAdd e2 env:k,r,p)
@@ -162,24 +164,21 @@ eval1 (w,env,(PairH v):k,r,p) | isValue w = ( TmPair v w,env,k,r,p)
 
 
 
--- Evaluation rules for Let blocks
+-- Evaluation rules for GetVar blocks
 eval1 (TmGetVar s,env,k,r,p) = (TmString "已导入var",env',k,r,p)
                            where env' = getVarFromFile (varStr s env) env
-
+-- Evaluation rules for ReadEnv blocks
 eval1 (TmReadEnv, env,k,r,p) = (TmString (listEnv env),env,k,r,p)
 -- Evaluation rules for Format Function blocks
 eval1 (TmFormat e, env,k,r,p) = (e,env,Format:k,r,p)
 eval1 (TmString s,env,Format:k,r,p) = (TmString s',env,k,r,p)
                            where s' = unlines $ formatResultF (socToList s)
-
+-- Evaluation rules for ProcSemicComma Function blocks
 eval1 (TmProcSemicComma s, env,k,r,p) = (TmString (s' ++ s''),env,k,r,p)
                            where s' = unlines ( procProcComma (getNeedProcComma (socToList (varStr s env)))
                                                 ++ getNeedProcComma' (socToList (varStr s env)))
                                  s'' = unlines ( procProcSemic (getNeedProcSemic (socToList (varStr s env)))
                                                 ++ getNeedProcSemic' (socToList (varStr s env)))
---eval1 (TmProcSemic s, env,k,r,p) = (TmString s',env,k,r,p)
---                           where s' = unlines ( procProcSemic (getNeedProcSemic (socToList (varStr s env)))
---                                                ++ getNeedProcSemic' (socToList (varStr s env)))
 -- Evaluation rules for FillBasePrefixReady Function blocks
 eval1 (TmFillBasePrefixReady s, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = procFillPr (unlines (getNeedFillPr (socToList (varStr s env)))) env ""
@@ -187,20 +186,20 @@ eval1 (TmFillBasePrefixReady s, env,k,r,p) = (TmString s',env,k,r,p)
                                    ++ "\n" ++ unlines (getNeedReady (socToList (varStr s env)))
 
 -- Evaluation rules for Delimit blocks
-eval1 (TmDelimit pos s x, env,k,r,p) | rmQuo pos == "Subj" && whichExp s == "String" = 
+eval1 (TmDelimit pos s x, env,k,r,p) | rmQuo pos == "Subj" && whichExp s == "String" =
                         let s' = pcDelimit 1 (rmQuo (unparse s) ) (socToList (varStr x env)) in (TmString s',env,k,r,p)
-                                     | rmQuo pos == "Subj" && whichExp s == "Var"    = 
+                                     | rmQuo pos == "Subj" && whichExp s == "Var"    =
                         let s' = pcDelimit 1 (rmQuo (unparse (getValueBinding' s env))) (socToList (varStr x env)) in (TmString s',env,k,r,p)
-                                     | rmQuo pos == "Pred" && whichExp s == "String"    = 
+                                     | rmQuo pos == "Pred" && whichExp s == "String"    =
                         let s' = pcDelimit 2 (rmQuo (unparse s) ) (socToList (varStr x env)) in (TmString s',env,k,r,p)
-                                     | rmQuo pos == "Pred" && whichExp s == "Var"    = 
+                                     | rmQuo pos == "Pred" && whichExp s == "Var"    =
                         let s' = pcDelimit 2 (rmQuo (unparse (getValueBinding' s env))) (socToList (varStr x env)) in (TmString s',env,k,r,p)
-                                     | rmQuo pos == "Obj" && whichExp s == "String"    = 
+                                     | rmQuo pos == "Obj" && whichExp s == "String"    =
                         let s' = pcDelimit 3 (rmQuo (unparse s) ) (socToList (varStr x env)) in (TmString s',env,k,r,p)
-                                     | rmQuo pos == "Obj" && whichExp s == "Var"    = 
+                                     | rmQuo pos == "Obj" && whichExp s == "Var"    =
                         let s' = pcDelimit 3 (rmQuo (unparse (getValueBinding' s env))) (socToList (varStr x env)) in (TmString s',env,k,r,p)
                                      | otherwise   = error ""
-                        
+
 -- Evaluation rules for Compare blocks
 eval1 (TmCompare s1 f1 s2 f2, env,k,r,p) = (TmString s', env,k,r,p)
                            where s' = pcCompare (rmQuo s1) (socToList (varStr f1 env)) (rmQuo s2) (socToList (varStr f2 env))
@@ -221,10 +220,11 @@ eval1 (e,env,k,r,p) = error "Unknown Evaluation Error"
 -}
 pcDelimit :: Int -> String -> [String] -> String
 pcDelimit i s l | "\n" `isInfixOf` s = unlines $ nub [ r | r <- l , r' <- wordsWhen (=='\n') s, r' `isInfixOf` r]
-                | otherwise = unlines [ rr | (r1,r2,r3,rr) <- splitTriples l , case i of 
-                                                                                  1 -> s `isInfixOf` r1
-                                                                                  2 -> s `isInfixOf` r2
-                                                                                  3 -> s `isInfixOf` r3]
+                | otherwise = unlines [ rr | (r1,r2,r3,rr) <- splitTriples l , case i of
+                                                  1 -> s `isInfixOf` r1
+                                                  2 -> s `isInfixOf` r2
+                                                  3 -> s `isInfixOf` r3
+                                                  _ -> error "The error occurs in the pcDelimit function in StqlEval.hs, this is a developer error"]
 {-
 --适用于Delimit "Subj"函数
 pcDefineSubj :: String -> [String] -> String
@@ -272,7 +272,7 @@ formatResult l = nub [ s'' | s <- l, let s' = replace ". " "" (filter (/=' ') s 
                                      let s'' = replace "  " " " $ reverse (replaceFirst  '>' " >" (reverse s'))]
 
 formatResult' :: [String] -> [String]
-formatResult' l =  sort $ [ r' | (r1,r2,r3,rr) <- splitTriples l, ifAllDigit r3, let r' = r1 ++ r2 ++ " " ++ show (readInt r3) ++ " ."] 
+formatResult' l =  sort $ [ r' | (r1,r2,r3,rr) <- splitTriples l, ifAllDigit r3, let r' = r1 ++ r2 ++ " " ++ show (readInt r3) ++ " ."]
                    ++ [ rr | (r1,r2,r3,rr) <- splitTriples l, not $ ifAllDigit r3]
 --formatResult' l =  sort $ [ r' | (r1,r2,r3,rr) <- splitTriples l, ifAllDigit r3, let r' = r1 ++ r2 ++ show (readInt r3)] ++ [ rr | (r1,r2,r3,rr) <- splitTriples l, not $ ifAllDigit r3]
 
@@ -309,11 +309,10 @@ getNeedFillBa l = [ s | s <- l, (length (split "http://" s) <= 2) && (isInfixOf 
 procFillBa :: String -> Environment -> String
 procFillBa s env = filter (/=' ') (procFillBa' s env)
 procFillBa' :: String -> Environment -> String
-procFillBa' s env = concat [ r' | r <- split "<" s, let r' = case isInfixOf "http://" r of
-                                                                     True  -> "<" ++ r
-                                                                     _     -> case not (isInfixOf "http://" r) && (isInfixOf ">" r) of
-                                                                         True -> (varStr "BaseVar" env \\ ">") ++ r
-                                                                         False -> r]
+procFillBa' s env = concat [ r' | r <- split "<" s, let r'
+                                                          | "http://" `isInfixOf` r = "<" ++ r
+                                                          | not ("http://" `isInfixOf` r) && isInfixOf ">" r = (varStr "BaseVar" env \\ ">") ++ r
+                                                          | otherwise = r]
 --适用于FillPrefix模块, 例: p:subjectC
 --s 为一整个文件的字符串, 通过在
 getNeedFillPr :: [String] -> [String]

@@ -27,7 +27,6 @@ import StqlTokens
     ']'    { TokenRList _ }
     '|'    { TokenListSeg _ }
     ';'    { TokenEnd _}
-    path             {TokenFilePath _ $$}
     ReadFile         {TokenReadFile _ }
     GetVars          {TokenGetVar _ }
     ReadEnv          { TokenReadEnv _ }
@@ -86,7 +85,7 @@ Exp : int                                       { TmInt $1 }
     | Exp ';' Exp                               { TmEnd $3 $1}
     | Exp ';'                                   { TmEnd2 $1 }
     | Print Exp                                 { TmPrint $2 }
-    | ReadFile path                             { TmReadTTLFile $2 }
+    | ReadFile string                           { TmReadTTLFile $2 }
     | GetVars var                               { TmGetVar $2 }
     | ReadEnv                                   { TmReadEnv }
     | Format Exp                                { TmFormat $2 }

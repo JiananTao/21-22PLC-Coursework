@@ -1,8 +1,7 @@
-Let (foo:String) = (ReadFile foo.ttl);
+Let (foo:String) = (ReadFile "foo.ttl");
 Let (foo2:String) = (ProcSemicComma foo);
 GetVars foo2;
 Let (all:String) = Format (FillBasePrefixReady foo2);
-
 Let (all1:String) = (Delimit "Subj" "http://www.cw.org/#problem2" In all);
 Let (all2:String) = (Delimit "Obj" "true" In all1);
 Print all2;
