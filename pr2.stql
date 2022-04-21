@@ -6,6 +6,6 @@ Let (preF2:String) = (FillPrefix foo2);
 Let (basF2:String) = (FillBase foo2);
 Let (reaF2:String) = (Ready foo2);
 Let (all:String) = Format (preF2 PlusASort basF2 PlusASort reaF2);
-Let (all1:String) = (DefineSubj "http://www.cw.org/#problem2" In all);
-Let (all2:String) = (DefineObj "true" In all1);
+Let (all1:String) = (Delimit "Subj" "http://www.cw.org/#problem2" In all);
+Let (all2:String) = (Delimit "Obj" "true" In all1);
 Print all2;

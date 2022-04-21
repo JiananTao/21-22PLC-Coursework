@@ -34,10 +34,11 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
 data Frame =
            HAdd Expr Environment | AddH Expr
            | HPlus Expr Environment | PlusH Expr
-           | HPair Expr Environment | PairH Expr
-           | FstH | SndH | Print | Format
+--           | HPair Expr Environment | PairH Expr
+--           | FstH | SndH 
+           | Print | Format
            | List | HList Expr Environment | ListH Expr
-           | HIf Expr Expr Environment
+--           | HIf Expr Expr Environment
            | Processing Expr | HLet String StqlType
 type Kontinuation = [ Frame ]
 type Result = [Expr]
@@ -54,6 +55,10 @@ getValueBinding :: String -> Environment -> Expr
 getValueBinding x [] = error "Variable binding not found"
 getValueBinding x ((y,e):env) | x == y    = e
                               | otherwise = getValueBinding x env
+getValueBinding' :: Expr -> Environment -> Expr
+getValueBinding' x [] = error "Variable binding not found"
+getValueBinding' (TmVar x) ((y,e):env) | x == y    = e
+                              | otherwise = getValueBinding x env
 
 update :: Environment -> String -> Expr -> Environment
 update env x e1 = (x,e1) : [ (y,e2) | (y,e2) <- env, x /= y ]
@@ -61,11 +66,17 @@ update env x e1 = (x,e1) : [ (y,e2) | (y,e2) <- env, x /= y ]
 isValue :: Expr -> Bool
 isValue (TmString _) = True
 isValue (TmInt _) = True
-isValue TmTrue = True
-isValue TmFalse = True
+--isValue TmTrue = True
+--isValue TmFalse = True
 --isValue TmUnit = True
 --isValue (TmPair e1 e2) = isValue e1 && isValue e2
 isValue _ = False
+
+whichExp :: Expr -> String
+whichExp (TmString _) = "String"
+whichExp (TmInt _) = "Int"
+whichExp (TmVar _) = "Var"
+whichExp _ = error ""
 
 {-
 --eval1是主要函数，用于模式匹配各个语法，并做出对应处理
@@ -173,18 +184,21 @@ eval1 (TmFillBase s, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = procFillBa (unlines (getNeedFillBa (socToList (varStr s env)))) env
 eval1 (TmReady s, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = unlines (getNeedReady (socToList (varStr s env)))
--- Evaluation rules for DefineSubj blocks
-eval1 (TmDefineSubj (TmString subj) x, env,k,r,p) = (TmString s',env,k,r,p)
-                           where s' = pcDefineSubj (subj \\ ['\"','\"']) (socToList (varStr x env))
-eval1 (TmDefineSubj (TmVar subj) x, env,k,r,p) = (TmString s',env,k,r,p)
-                           where s' = pcDefineSubj (unparse (getValueBinding subj env) \\ ['\"','\"']) (socToList (varStr x env))
-eval1 (TmDefineSubj _ _, env,k,r,p) = error ""
--- Evaluation rules for DefineObj blocks
-eval1 (TmDefineObj obj x, env,k,r,p) = (TmString s',env,k,r,p)
-                           where s' = pcDefineObj (obj \\ ['\"','\"']) (socToList (varStr x env))
--- Evaluation rules for DefinePred blocks
-eval1 (TmDefinePred pred x, env,k,r,p) = (TmString s', env,k,r,p)
-                           where s' = pcDefinePred (pred \\ ['\"','\"']) (socToList (varStr x env))
+-- Evaluation rules for Delimit blocks
+eval1 (TmDelimit pos s x, env,k,r,p) | rmQuo pos == "Subj" && whichExp s == "String" = 
+                        let s' = pcDelimit 1 (rmQuo (unparse s) ) (socToList (varStr x env)) in (TmString s',env,k,r,p)
+                                     | rmQuo pos == "Subj" && whichExp s == "Var"    = 
+                        let s' = pcDelimit 1 (rmQuo (unparse (getValueBinding' s env))) (socToList (varStr x env)) in (TmString s',env,k,r,p)
+                                     | rmQuo pos == "Pred" && whichExp s == "String"    = 
+                        let s' = pcDelimit 2 (rmQuo (unparse s) ) (socToList (varStr x env)) in (TmString s',env,k,r,p)
+                                     | rmQuo pos == "Pred" && whichExp s == "Var"    = 
+                        let s' = pcDelimit 2 (rmQuo (unparse (getValueBinding' s env))) (socToList (varStr x env)) in (TmString s',env,k,r,p)
+                                     | rmQuo pos == "Obj" && whichExp s == "String"    = 
+                        let s' = pcDelimit 3 (rmQuo (unparse s) ) (socToList (varStr x env)) in (TmString s',env,k,r,p)
+                                     | rmQuo pos == "Obj" && whichExp s == "Var"    = 
+                        let s' = pcDelimit 3 (rmQuo (unparse (getValueBinding' s env))) (socToList (varStr x env)) in (TmString s',env,k,r,p)
+                                     | otherwise   = error ""
+                        
 -- Evaluation rules for Compare blocks
 eval1 (TmCompare s1 f1 s2 f2, env,k,r,p) = (TmString s', env,k,r,p)
                            where s' = pcCompare (rmQuo s1) (socToList (varStr f1 env)) (rmQuo s2) (socToList (varStr f2 env))
@@ -203,17 +217,26 @@ eval1 (e,env,k,r,p) = error "Unknown Evaluation Error"
 --
 --
 -}
---适用于DefineSubj函数
+pcDelimit :: Int -> String -> [String] -> String
+pcDelimit i s l | "\n" `isInfixOf` s = unlines $ nub [ r | r <- l , r' <- wordsWhen (=='\n') s, r' `isInfixOf` r]
+                | otherwise = unlines [ rr | (r1,r2,r3,rr) <- splitTriples l , case i of 
+                                                                                  1 -> s `isInfixOf` r1
+                                                                                  2 -> s `isInfixOf` r2
+                                                                                  3 -> s `isInfixOf` r3]
+{-
+--适用于Delimit "Subj"函数
 pcDefineSubj :: String -> [String] -> String
 pcDefineSubj subj s | "\n" `isInfixOf` subj = unlines $ nub [ r | r <- s , r' <- wordsWhen (=='\n') subj, r' `isInfixOf` r]
-                    | otherwise = unlines [ r | r <- s , subj `isInfixOf` r]
---适用于DefineObj函数
---take 6是因为只要求判断true
-pcDefineObj :: String -> [String] -> String
-pcDefineObj obj s = unlines [ r | r <- s , obj `isInfixOf` reverse (take 6 (reverse r)) ]
---适用于DefinePred函数
+                    | otherwise = unlines [ rr | (r1,r2,r3,rr) <- splitTriples s , subj `isInfixOf` r1]
+--适用于Delimit "Pred"函数
 pcDefinePred :: String -> [String] -> String
-pcDefinePred pred s = unlines [ r | r <- s , pred `isInfixOf` r]
+pcDefinePred pred s | "\n" `isInfixOf` pred = unlines $ nub [ r | r <- s , r' <- wordsWhen (=='\n') pred, r' `isInfixOf` r]
+                    | otherwise = unlines [ rr | (r1,r2,r3,rr) <- splitTriples s , pred `isInfixOf` r2]
+--适用于Delimit "Obj"函数
+pcDefineObj :: String -> [String] -> String
+pcDefineObj obj s | "\n" `isInfixOf` obj = unlines $ nub [ r | r <- s , r' <- wordsWhen (=='\n') obj, r' `isInfixOf` r]
+                  | otherwise = unlines [ rr | (r1,r2,r3,rr) <- splitTriples s , obj `isInfixOf` r3]
+-}
 --适用于Compare函数
 --因为已经验证过了有3个，所以！！不会抛出错误
 pcCompare :: String -> [String] -> String -> [String] -> String
@@ -471,10 +494,10 @@ eval (e,env,k,r,p) | e' == e && isValue e' && null k && null p  = r'
 unparse :: Expr -> String
 unparse (TmString n) =  n
 unparse (TmInt n) = show n
-unparse TmTrue = "true"
-unparse TmFalse = "false"
+--unparse TmTrue = "true"
+--unparse TmFalse = "false"
 --unparse TmUnit = "()"
-unparse (TmPair e1 e2) = "( " ++ unparse e1 ++ " , " ++ unparse e2 ++ " )"
+--unparse (TmPair e1 e2) = "( " ++ unparse e1 ++ " , " ++ unparse e2 ++ " )"
 unparse _ = "Unknown"
 unparseAll :: [Expr] -> [String]
 unparseAll = map unparse

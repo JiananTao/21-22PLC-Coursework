@@ -7,23 +7,14 @@ import StqlTokens
 %tokentype { StqlToken } 
 %error { parseError }
 %token 
-    Bool   { TokenTypeBool _ } 
     Int    { TokenTypeInt _ } 
     String { TokenTypeString _ }
---    Unit   { TokenTypeUnit _ }
     int    { TokenInt _ $$ }
     string { TokenString _ $$ } 
-    true   { TokenTrue _ }
-    false  { TokenFalse _ }
     '++'   { TokenPlusString _ }
     PlusASort { TokenPlusASort _ }
     '+'    { TokenPlus _ }
     var    { TokenVar _ $$ }
---    If     { TokenIf _ }
---    Then   { TokenThen _ }
---    Else   { TokenElse _ }
---    fst    { TokenFst _ }
---    snd    { TokenSnd _ }
     Let    { TokenLet _ }
     Print  { TokenPrint _ }
     Clear  { TokenClear _ }
@@ -35,7 +26,6 @@ import StqlTokens
     '['    { TokenLList _ } 
     ']'    { TokenRList _ }
     '|'    { TokenListSeg _ }
-    ','    { TokenComma _ }
     ';'    { TokenEnd _}
     path             {TokenFilePath _ $$}
     ReadFile         {TokenReadFile _ }
@@ -47,12 +37,20 @@ import StqlTokens
     Ready            { TokenReady _ }
     ProcSemic        { TokenProcSemic _ }
     ProcComma        { TokenProcComma _ }
-    DefineSubj       { TokenDefineSubj _ }
-    DefineObj        { TokenDefineObj _ }
-    DefinePred       { TokenDefinePred _ }
+    Delimit          { TokenDelimit _ }
     Compare          { TokenCompare _ }
     In               { TokenIn _ }
     LiteralsNum      { TokenLiteralsNum _ }
+--    ','    { TokenComma _ }
+--    Bool   { TokenTypeBool _ } 
+--    Unit   { TokenTypeUnit _ }
+--    true   { TokenTrue _ }
+--    false  { TokenFalse _ }
+--    If     { TokenIf _ }
+--    Then   { TokenThen _ }
+--    Else   { TokenElse _ }
+--    fst    { TokenFst _ }
+--    snd    { TokenSnd _ }
 
 %left ';'
 %left '['
@@ -70,7 +68,6 @@ import StqlTokens
 %left '+'
 %left '++'
 %left PlusASort
-%left ','
 %nonassoc int true false var '(' ')'
 
 
@@ -80,18 +77,11 @@ import StqlTokens
 Exp : int                                       { TmInt $1 } 
     | string                                    { TmString $1 } 
     | var                                       { TmVar $1 }
-    | true                                      { TmTrue }
-    | false                                     { TmFalse } 
---    | '('')'                                    { TmUnit }
-    | '(' Exp ',' Exp ')'                       { TmPair $2 $4 }
     | '[' Exp ']'                               { TmList $2 }
     | Exp '|' Exp                               { TmListSeg $1 $3 }
     | Exp '++' Exp                              { TmAddString $1 $3 }
     | Exp PlusASort Exp                         { TmPlusASort $1 $3 }
     | Exp '+' Exp                               { TmAdd $1 $3 }
---    | fst Exp                                   { TmFst $2 }
---    | snd Exp                                   { TmSnd $2 }
---    | If Exp Then Exp Else Exp                  { TmIf $2 $4 $6 } 
     | Let '(' var ':' Type ')' '=' Exp          { TmLet $3 $5 $8 }
     | Clear '(' var ':' Type ')'                { TmClear $3 $5 }
     | ClearAll                                  { TmClearAll }
@@ -108,16 +98,21 @@ Exp : int                                       { TmInt $1 }
     | Ready var                                 { TmReady $2}
     | ProcSemic var                             { TmProcSemic $2}
     | ProcComma var                             { TmProcComma $2}
-    | DefineSubj Exp In var                     { TmDefineSubj $2 $4 }
-    | DefineObj string In var                   { TmDefineObj $2 $4 }
-    | DefinePred string In var                  { TmDefinePred $2 $4 }
+    | Delimit string Exp In var                 { TmDelimit $2 $3 $5 }
     | Compare string var In string var          { TmCompare $2 $3 $5 $6 }
     | LiteralsNum var                           { TmLiteralsNum $2 }
+--    | true                                      { TmTrue }
+--    | false                                     { TmFalse } 
+--    | '('')'                                    { TmUnit }
+--    | '(' Exp ',' Exp ')'                       { TmPair $2 $4 }
+--    | fst Exp                                   { TmFst $2 }
+--    | snd Exp                                   { TmSnd $2 }
+--    | If Exp Then Exp Else Exp                  { TmIf $2 $4 $6 } 
 
-
-Type : Bool                     { TyBool } 
-     | Int                      { TyInt } 
+Type : 
+     Int                      { TyInt } 
      | String                   { TyString }
+--   | Bool                     { TyBool } 
 --     | Unit                     { TyUnit }
 --     | '(' Type ',' Type ')'    { TyPair $2 $4 }
 
@@ -134,12 +129,9 @@ data StqlType = TyInt | TyString | TyBool | TyPair StqlType StqlType | TyFun Stq
    deriving (Show,Eq)
 
 type Environment = [ (String,Expr) ]
-data Expr = TmInt Int | TmString String | TmTrue | TmFalse 
---          | TmUnit 
-            | TmPair Expr Expr | TmAdd Expr Expr | TmVar String 
---            | TmFst Expr | TmSnd Expr 
+data Expr = TmInt Int | TmString String 
+            | TmAdd Expr Expr | TmVar String 
             | TmAddString Expr Expr
---            | TmIf Expr Expr Expr 
             | TmLet String StqlType Expr
             | TmList Expr | TmListSeg Expr Expr
             | TmPrint Expr | TmPlusASort Expr Expr
@@ -148,10 +140,15 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse
             | TmProcSemic String | TmProcComma String
             | TmClear String StqlType | TmClearAll
             | TmLiteralsNum String
-            | TmDefineSubj Expr String | TmDefineObj String String | TmDefinePred String String
+            | TmDelimit String Expr String 
             | TmCompare String String String String
             | TmEnd Expr Expr | TmEnd2 Expr
             | TmReadTTLFile String
+--          | TmTrue | TmFalse 
+--          | TmUnit 
+--            | TmPair Expr Expr 
+--            | TmIf Expr Expr Expr 
+--            | TmFst Expr | TmSnd Expr 
     deriving (Show,Eq)
 --data Test = TmListSeg String String 
 --    deriving (Show,Eq)
