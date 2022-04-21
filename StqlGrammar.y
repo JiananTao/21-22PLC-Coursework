@@ -117,8 +117,8 @@ Type :
 parseError :: [StqlToken] -> a
 parseError [] = error "Unknown Parse Error" 
 parseError (t:ts) = error ("Parse error at line:column " ++ (tokenPosn t))
--- | TyUnit
-data StqlType = TyInt | TyString | TyBool | TyPair StqlType StqlType | TyFun StqlType StqlType
+-- | TyUnit | TyBool | TyPair StqlType StqlType | TyFun StqlType StqlType
+data StqlType = TyInt | TyString 
    deriving (Show,Eq)
 
 type Environment = [ (String,Expr) ]
