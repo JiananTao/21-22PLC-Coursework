@@ -20,7 +20,7 @@ data Expr = TmInt Int | TmString String | TmTrue | TmFalse | TmUnit
             | TmPair Expr Expr | TmAdd Expr Expr | TmVar String 
             | TmFst Expr | TmSnd Expr | TmAddString Expr Expr
             | TmIf Expr Expr Expr | TmLet String StqlType Expr
-            | TmPrint Expr | TmPlusASort Expr Expr
+            | TmPrint Expr | TmPlusVar Expr Expr
             | TmGetVar String | TmReadEnv | TmFormat Expr
             | TmFillPrefix String | TmFillBase String | TmReady String
             | TmProcSemic String | TmProcComma String 
@@ -85,10 +85,10 @@ whichExp _ = error ""
 -}
 --Small step evaluation function
 eval1 :: State -> State
--- Evaluation rules for plus and sort string
+-- Evaluation rules for plus and sort var
 -- 只接受Var TmString相加
-eval1 (TmPlusASort e1 e2,env,k,r,p) = (e1,env,HPlus e2 env:k,r,p)
-eval1 (TmVar n,env1,(HPlus e env2):k,r,p) = (e,env2 ++ env1,PlusH e' : k,r,p)
+eval1 (TmPlusVar e1 e2,env,k,r,p) = (e1,env,HPlus e2 env:k,r,p)
+eval1 (TmVar n,env1,(HPlus e env2):k,r,p) = if whichExp e' == "String" then (e,env2 ++ env1,PlusH e' : k,r,p) else error "PlusVar only accept String in Var now"
                                          where e' = getValueBinding n env1
 eval1 (TmVar m,env,(PlusH (TmString n)):k,r,p) = (TmString (toListSort (unparse e' ++ "\n" ++ n)),env,k,r,p)
                                          where e'  = getValueBinding m env

@@ -7,7 +7,7 @@ GetVars foo2;
 Let (preF2:String) = (FillPrefix foo2);
 Let (basF2:String) = (FillBase foo2);
 Let (reaF2:String) = (Ready foo2);
---Print (preF2 PlusASort basF2 PlusASort reaF2);
+--Print (preF2 PlusVar basF2 PlusVar reaF2);
 Clear (p:String);
 Clear (s:String);
 Clear (t:String);
@@ -19,7 +19,7 @@ GetVars bar2;
 Let (preB2:String) = (FillPrefix bar2);
 Let (basB2:String) = (FillBase bar2);
 Let (reaB2:String) = (Ready bar2);
-Print (Format (preF2 PlusASort basF2 PlusASort reaF2 PlusASort preB2 PlusASort basB2 PlusASort reaB2));
+Print (Format (preF2 PlusVar basF2 PlusVar reaF2 PlusVar preB2 PlusVar basB2 PlusVar reaB2));
 
 
 

@@ -11,14 +11,13 @@ $algit = [a-zA-Z0-9\#\:\/\.]
 
 
 tokens :-
-$white+       ; 
+  $white+       ;  
   "--".*        ; 
-  LiteralsNum    { tok (\p s -> TokenLiteralsNum p) }
   Int            { tok (\p s -> TokenTypeInt p) }
   String         { tok (\p s -> TokenTypeString p) }
   $digit+        { tok (\p s -> TokenInt p (read s)) }
   "++"           { tok (\p s -> TokenPlusString p) }    
-  PlusASort      { tok (\p s -> TokenPlusASort p )}      
+  PlusVar      { tok (\p s -> TokenPlusVar p )}      
   \+             { tok (\p s -> TokenPlus p) }
   \:             { tok (\p s -> TokenHasType p) }
   ClearAll       { tok (\p s -> TokenClearAll p )}
@@ -44,6 +43,7 @@ $white+       ;
   Delimit        { tok (\p s -> TokenDelimit p) }
   In             { tok (\p s -> TokenIn p) }
   Compare        { tok (\p s -> TokenCompare p) }
+  LiteralsNum    { tok (\p s -> TokenLiteralsNum p) }
   [$alpha $digit \_ \']*.ttl    { tok (\p s -> TokenFilePath p s) }
   \"$algit*\"    { tok (\p s -> TokenString p s) }
   $alpha [$alpha $digit \_ \’]*      { tok (\p s -> TokenVar p s) }
@@ -74,7 +74,7 @@ data StqlToken =
   TokenString AlexPosn String    |
   TokenPlus AlexPosn             |
   TokenPlusString AlexPosn       |
-  TokenPlusASort AlexPosn        |
+  TokenPlusVar AlexPosn        |
   TokenHasType AlexPosn          |
   TokenLet AlexPosn              |
   TokenPrint AlexPosn            |
@@ -120,7 +120,7 @@ tokenPosn (TokenInt  (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenString  (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenPlus  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenPlusString  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenPlusASort  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenPlusVar  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenHasType (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenLet (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenGetVar (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
