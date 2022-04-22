@@ -38,16 +38,6 @@ import StqlTokens
     Compare          { TokenCompare _ }
     In               { TokenIn _ }
     LiteralsNum      { TokenLiteralsNum _ }
---    ','    { TokenComma _ }
---    Bool   { TokenTypeBool _ } 
---    Unit   { TokenTypeUnit _ }
---    true   { TokenTrue _ }
---    false  { TokenFalse _ }
---    If     { TokenIf _ }
---    Then   { TokenThen _ }
---    Else   { TokenElse _ }
---    fst    { TokenFst _ }
---    snd    { TokenSnd _ }
 
 %left ';'
 %left '['
@@ -58,10 +48,6 @@ import StqlTokens
 %right Format
 %right Print
 %right '='
---%nonassoc If
---%nonassoc Then
---%nonassoc Else
---%left fst snd
 %left '+'
 %left '++'
 %left PlusVar
@@ -96,13 +82,7 @@ Exp : int                                       { TmInt $1 }
     | Delimit string Exp In var                 { TmDelimit $2 $3 $5 }
     | Compare string var In string var          { TmCompare $2 $3 $5 $6 }
     | LiteralsNum var                           { TmLiteralsNum $2 }
---    | true                                      { TmTrue }
---    | false                                     { TmFalse } 
---    | '('')'                                    { TmUnit }
---    | '(' Exp ',' Exp ')'                       { TmPair $2 $4 }
---    | fst Exp                                   { TmFst $2 }
---    | snd Exp                                   { TmSnd $2 }
---    | If Exp Then Exp Else Exp                  { TmIf $2 $4 $6 } 
+
 Str : Str 'SA++FE' Str                          { TsAddString $1 $3}
     | Str '|' Str                               { TsListSeg $1 $3 }
     | string                                    { TsString $1 }
@@ -110,16 +90,12 @@ Str : Str 'SA++FE' Str                          { TsAddString $1 $3}
 Type : 
      Int                      { TyInt } 
      | String                   { TyString }
---   | Bool                     { TyBool } 
---     | Unit                     { TyUnit }
---     | '(' Type ',' Type ')'    { TyPair $2 $4 }
-
 
 { 
 parseError :: [StqlToken] -> a
 parseError [] = error "Unknown Parse Error" 
 parseError (t:ts) = error ("Parse error at line:column " ++ (tokenPosn t))
--- | TyUnit | TyBool | TyPair StqlType StqlType | TyFun StqlType StqlType
+
 data StqlType = TyInt | TyString 
    deriving (Show,Eq)
 
@@ -139,13 +115,41 @@ data Expr = TmInt Int | TmString String
             | TmCompare String String String String
             | TmEnd Expr Expr | TmEnd2 Expr
             | TmReadTTLFile String
---          | TmTrue | TmFalse 
---          | TmUnit 
---            | TmPair Expr Expr 
---            | TmIf Expr Expr Expr 
---            | TmFst Expr | TmSnd Expr 
     deriving (Show,Eq)
 data Str = TsAddString Str Str | TsListSeg Str Str | TsString String
     deriving (Show,Eq)
 
 } 
+{-
+--something useless now but may be use in future
+-}
+--    ','    { TokenComma _ }
+--    Bool   { TokenTypeBool _ } 
+--    Unit   { TokenTypeUnit _ }
+--    true   { TokenTrue _ }
+--    false  { TokenFalse _ }
+--    If     { TokenIf _ }
+--    Then   { TokenThen _ }
+--    Else   { TokenElse _ }
+--    fst    { TokenFst _ }
+--    snd    { TokenSnd _ }
+--%nonassoc If
+--%nonassoc Then
+--%nonassoc Else
+--%left fst snd
+--    | true                                      { TmTrue }
+--    | false                                     { TmFalse } 
+--    | '('')'                                    { TmUnit }
+--    | '(' Exp ',' Exp ')'                       { TmPair $2 $4 }
+--    | fst Exp                                   { TmFst $2 }
+--    | snd Exp                                   { TmSnd $2 }
+--    | If Exp Then Exp Else Exp                  { TmIf $2 $4 $6 } 
+--   | Bool                     { TyBool } 
+--     | Unit                     { TyUnit }
+--     | '(' Type ',' Type ')'    { TyPair $2 $4 }
+-- | TyUnit | TyBool | TyPair StqlType StqlType | TyFun StqlType StqlType
+--          | TmTrue | TmFalse 
+--          | TmUnit 
+--            | TmPair Expr Expr 
+--            | TmIf Expr Expr Expr 
+--            | TmFst Expr | TmSnd Expr 

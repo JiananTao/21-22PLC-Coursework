@@ -45,17 +45,6 @@ tokens :-
   [$alpha $digit \_ \']*.ttl    { tok (\p s -> TokenFilePath p s) }
   \"$algit*\"    { tok (\p s -> TokenString p s) }
   $alpha [$alpha $digit \_ \’]*      { tok (\p s -> TokenVar p s) }
---  Bool           { tok (\p s -> TokenTypeBool p)} 
---  Unit           { tok (\p s -> TokenTypeUnit p)}
---  \,             { tok (\p s -> TokenComma p) }
---  true           { tok (\p s -> TokenTrue p) }
---  false          { tok (\p s -> TokenFalse p) }
---  If             { tok (\p s -> TokenIf p) }
---  Then           { tok (\p s -> TokenThen p) }
---  Else           { tok (\p s -> TokenElse p) }
---  fst            { tok (\p s -> TokenFst p) }
---  snd            { tok (\p s -> TokenSnd p) }
-
 
 { 
 -- Each action has type :: AlexPosn -> String -> MDLToken 
@@ -97,16 +86,6 @@ data StqlToken =
   TokenIn AlexPosn               |
   TokenLiteralsNum AlexPosn      |
   TokenReadEnv AlexPosn
---  TokenTypeBool AlexPosn         | 
---  TokenTypeUnit AlexPosn         |
---  TokenTrue AlexPosn             |
---  TokenFalse AlexPosn            |
---  TokenIf AlexPosn               |
---  TokenThen AlexPosn             |
---  TokenElse AlexPosn             |
---  TokenFst AlexPosn              |
---  TokenSnd AlexPosn              |
---  TokenComma AlexPosn            | 
   deriving (Eq,Show) 
 
 tokenPosn :: StqlToken -> String
@@ -142,6 +121,30 @@ tokenPosn (TokenIn (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenLiteralsNum (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenReadFile (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenFilePath (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
+}
+
+
+--something useless now but may be use in future
+--  Bool           { tok (\p s -> TokenTypeBool p)} 
+--  Unit           { tok (\p s -> TokenTypeUnit p)}
+--  \,             { tok (\p s -> TokenComma p) }
+--  true           { tok (\p s -> TokenTrue p) }
+--  false          { tok (\p s -> TokenFalse p) }
+--  If             { tok (\p s -> TokenIf p) }
+--  Then           { tok (\p s -> TokenThen p) }
+--  Else           { tok (\p s -> TokenElse p) }
+--  fst            { tok (\p s -> TokenFst p) }
+--  snd            { tok (\p s -> TokenSnd p) }
+--  TokenTypeBool AlexPosn         | 
+--  TokenTypeUnit AlexPosn         |
+--  TokenTrue AlexPosn             |
+--  TokenFalse AlexPosn            |
+--  TokenIf AlexPosn               |
+--  TokenThen AlexPosn             |
+--  TokenElse AlexPosn             |
+--  TokenFst AlexPosn              |
+--  TokenSnd AlexPosn              |
+--  TokenComma AlexPosn            | 
 --tokenPosn (TokenTypeUnit  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 --tokenPosn (TokenTypeUnit  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 --tokenPosn (TokenTrue  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
@@ -152,4 +155,3 @@ tokenPosn (TokenFilePath (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 --tokenPosn (TokenFst (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 --tokenPosn (TokenSnd (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 --tokenPosn (TokenComma (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-}
