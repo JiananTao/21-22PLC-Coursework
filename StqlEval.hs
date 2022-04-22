@@ -98,29 +98,13 @@ eval1 (TmVar m,env,(PlusH (TmString n)):k,r,p) = (TmString (toListSort (unparse 
 eval1 (TmVar x,env,k,r,p) = (e',env,k,r,p)
                     where e' = getValueBinding x env
 
--- Rule for terminated evaluations
---eval1 (v,env,[],r,[]) | isValue v = (v,env,[],v:r,[])
-eval1 (v,env,[],r,[]) | isValue v = (v,env,[],r,[])
---eval1 (v,env,[],r,(Processing e):p) | isValue v = (e,env,[],v:r,p)
-eval1 (v,env,[],r,(Processing e):p) | isValue v = (e,env,[],r,p)
-eval1 (v,env,Print:k,r,(Processing e):p) | isValue v = (e,env,[],v:r,p)
-                                         | otherwise = error "Print can only output functions which result is Int or String"
-eval1 (v,env,Print:k,r,p) | isValue v = (v,env,[],v:r,p)
-                          | otherwise = error "Print can only output functions which result is Int or String"
-eval1 (v,env,List:k,r,p) | isValue v = (v,env,[],r,p)
-                         | otherwise = error "[xxx|yyy|zzz] xxx、yyy and zzz must be String Type"
+
 -- Rule for Print
 eval1 (TmPrint e,env,k,r,p) = (e,env,k ++ [Print] ,r,p)
 
 -- Evaluation rules for End operator
 eval1 (TmEnd2 e,env,k,r,p) = (e,env,k,r,p)
 eval1 (TmEnd e1 e2,env,k,r,p) = (e2,env,k,r,Processing e1:p)
-
--- Evaluation rules for Let blocks
-eval1 (TmLet x typ e,env,k,r,p) | isValue e = (e,update env x e,k,r,p)
-                                | otherwise = (e,env,HLet x typ:k,r,p)
-eval1 (v,env,(HLet x typ):k,r,p) | isValue v = (TmLet x typ v,env,k,r,p)
-                                 | otherwise = error "Only support type String and Int in Let Block"
 
 
 -- Evaluation rules for Clear blocks
@@ -190,6 +174,23 @@ eval1 (TmCompare s1 f1 s2 f2, env,k,r,p) = (TmString s', env,k,r,p)
 eval1 (TmLiteralsNum s, env,k,r,p) = (TmString s', env,k,r,p)
                            where s' = pcLiteralsNum (socToList (varStr s env))
 
+-- Evaluation rules for Let blocks
+eval1 (TmLet x typ e,env,k,r,p) | isValue e = (e,update env x e,k,r,p)
+                                | otherwise = (e,env,HLet x typ:k,r,p)
+eval1 (v,env,(HLet x typ):k,r,p) | isValue v = (TmLet x typ v,env,k,r,p)
+                                 | otherwise = error "Only support type String and Int in Let Block"
+
+-- Rule for terminated evaluations
+--eval1 (v,env,[],r,[]) | isValue v = (v,env,[],v:r,[])
+eval1 (v,env,[],r,[]) | isValue v = (v,env,[],r,[])
+--eval1 (v,env,[],r,(Processing e):p) | isValue v = (e,env,[],v:r,p)
+eval1 (v,env,[],r,(Processing e):p) | isValue v = (e,env,[],r,p)
+eval1 (v,env,Print:k,r,(Processing e):p) | isValue v = (e,env,[],v:r,p)
+                                         | otherwise = error "Print can only output functions which result is Int or String"
+eval1 (v,env,Print:k,r,p) | isValue v = (v,env,[],v:r,p)
+                          | otherwise = error "Print can only output functions which result is Int or String"
+eval1 (v,env,List:k,r,p) | isValue v = (v,env,[],r,p)
+                         | otherwise = error "[xxx|yyy|zzz] xxx、yyy and zzz must be String Type"
 -- Rule for runtime errors
 eval1 (e,env,k,r,p) = error "Unknown Evaluation Error"
 
