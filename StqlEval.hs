@@ -31,16 +31,13 @@ data Expr = TmInt Int | TmString String
             | TmReadTTLFile String
     deriving (Show,Eq)
 -}
---           | HIf Expr Expr Environment
---           | HPair Expr Environment | PairH Expr
---           | FstH | SndH 
+
 data StrFrame = HPlusStr String | PlusHStr Str
               | HListStr String | ListHStr Str
 data Frame =
            HAdd Expr Environment | AddH Expr
            | HPlus Expr Environment | PlusH Expr
-           | Print | Format
-           | List | HList Expr Environment | ListH Expr
+           | Print | Format | List 
            | Processing Expr | HLet String StqlType
 type Kontinuation = [ Frame ]
 type Result = [Expr]
@@ -485,6 +482,10 @@ unparseAll = map unparse
 --May be use in funture
 --
 -}
+-- | HList Expr Environment | ListH Expr
+--           | HIf Expr Expr Environment
+--           | HPair Expr Environment | PairH Expr
+--           | FstH | SndH 
 --isValue TmTrue = True
 --isValue TmFalse = True
 --isValue TmUnit = True
