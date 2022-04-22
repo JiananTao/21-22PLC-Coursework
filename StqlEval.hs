@@ -35,6 +35,7 @@ data Expr = TmInt Int | TmString String
 --           | HPair Expr Environment | PairH Expr
 --           | FstH | SndH 
 data StrFrame = HPlusStr Str | PlusHStr Str
+              | HListStr Str | ListHStr Str
 data Frame =
            HAdd Expr Environment | AddH Expr
            | HPlus Expr Environment | PlusH Expr
@@ -68,10 +69,6 @@ update env x e1 = (x,e1) : [ (y,e2) | (y,e2) <- env, x /= y ]
 isValue :: Expr -> Bool
 isValue (TmString _) = True
 isValue (TmInt _) = True
---isValue TmTrue = True
---isValue TmFalse = True
---isValue TmUnit = True
---isValue (TmPair e1 e2) = isValue e1 && isValue e2
 isValue _ = False
 
 whichExp :: Expr -> String
@@ -80,13 +77,19 @@ whichExp (TmInt _) = "Int"
 whichExp (TmVar _) = "Var"
 whichExp _ = error ""
 
+{-
+--evalStr is one of the main functions, which used for '|' and 'SA++FE'
+--to make sure they just have String input
+-}
 evalStr :: (Str, Str, [StrFrame]) -> String
-evalStr ((TsAddString s1 s2),s,k) = evalStr (s1, s2, (HPlusStr s):k)
-evalStr ((TsString s1), (TsString s2), k) = evalStr' ((TsString s1), (HPlusStr (TsString s2)):k) 
+evalStr (s,(TsAddString s1 s2),k) = evalStr (s1, s2, (HPlusStr s):k)
+evalStr (s,(TsListSeg s1 s2),k) = evalStr (s1, s2, (HListStr s):k)
+evalStr ((TsString s1), (TsString s2), (HPlusStr s):k) = evalStr' ((TsString s1), (HPlusStr (TsString s2)):((HPlusStr s):k)) 
+evalStr ((TsString s1), (TsString s2), (HListStr s):k) = evalStr' ((TsString s1), (HListStr (TsString s2)):((HListStr s):k))
 evalStr' :: (Str, [StrFrame]) -> String
 evalStr' (s1, (HPlusStr s):k) = evalStr' ((TsString (rmQuo (unparseStr s1) ++ rmQuo(unparseStr s))), k)
+evalStr' (s1, (HListStr s):k) = evalStr' ((TsString (rmQuo (unparseStr s1) ++ "\n" ++ rmQuo(unparseStr s))), k)
 evalStr' (s1, []) = unparseStr s1
-
 {-
 --eval1 is the main function, which is used to pattern match each grammar and make corresponding processing
 --
@@ -129,7 +132,7 @@ eval1 (TmInt n,env1,(HAdd e env2):k,r,p) = (e,env2 ++ env1,AddH (TmInt n) : k,r,
 eval1 (TmInt m,env,(AddH (TmInt n)):k,r,p) = (TmInt (n + m),env,k,r,p)
 
 -- Evaluation rules for plus string operator
-eval1 (TmSaveAddString e1 e2,env,k,r,p) = (TmString (evalStr (e1, e2, [])),env,k,r,p)
+eval1 (TmSafeAddString e1 e2,env,k,r,p) = (TmString (evalStr (e1, e2, [])),env,k,r,p)
 eval1 (TmAddString e1 e2,env,k,r,p) = (e1,env,HPlus e2 env:k,r,p)
 eval1 (TmString n,env1,(HPlus e env2):k,r,p) = (e,env2 ++ env1,PlusH (TmString (rmQuo n)) : k,r,p)
 eval1 (TmString m,env,(PlusH (TmString n)):k,r,p) = (TmString (n ++ rmQuo m),env,k,r,p)
@@ -137,9 +140,8 @@ eval1 (TmString m,env,(PlusH (TmString n)):k,r,p) = (TmString (n ++ rmQuo m),env
 
 -- Evaluation rules for List operator
 eval1 (TmList e,env,k,r,p) = (e,env,k ++ [List],r,p)
-eval1 (TmListSeg e1 e2,env,k,r,p) = (e2,env,HList e1 env:k,r,p)
-eval1 (TmString n,env1,(HList e env2):k,r,p) = (e,env2 ++ env1,ListH (TmString (rmQuo n)) : k,r,p)
-eval1 (TmString m,env,(ListH (TmString n)):k,r,p) = (TmString (n ++ "\n" ++ rmQuo m),env,k,r,p)
+eval1 (TmListSeg e1 e2,env,k,r,p) = (TmString (evalStr (e1, e2, [])),env,k,r,p)
+
 
 -- Evaluation rules for GetVar blocks
 eval1 (TmGetVar s,env,k,r,p) = (TmString "loaded var",env',k,r,p)
@@ -483,6 +485,10 @@ unparseAll = map unparse
 --May be use in funture
 --
 -}
+--isValue TmTrue = True
+--isValue TmFalse = True
+--isValue TmUnit = True
+--isValue (TmPair e1 e2) = isValue e1 && isValue e2
 --unparse TmTrue = "true"
 --unparse TmFalse = "false"
 --unparse TmUnit = "()"
@@ -501,4 +507,8 @@ eval1 (TmFalse,env1,(HIf e2 e3 env2):k,r,p) = (e3,env2 ++ env1,k,r,p)
 eval1 (TmPair e1 e2,env,k,r,p) = (e1,env,HPair e2 env:k,r,p)
 eval1 (v,env1,(HPair e env2):k,r,p) | isValue v = (e,env2 ++ env1,PairH v : k,r,p)
 eval1 (w,env,(PairH v):k,r,p) | isValue w = ( TmPair v w,env,k,r,p)
+--eval1 (TmListSeg e1 e2,env,k,r,p) = (e2,env,HList e1 env:k,r,p)
+--eval1 (TmString n,env1,(HList e env2):k,r,p) = (e,env2 ++ env1,ListH (TmString (rmQuo n)) : k,r,p)
+--eval1 (TmString m,env,(ListH (TmString n)):k,r,p) = (TmString (n ++ "\n" ++ rmQuo m),env,k,r,p)
+
 -}

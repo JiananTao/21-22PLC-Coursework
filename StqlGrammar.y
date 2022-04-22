@@ -12,7 +12,7 @@ import StqlTokens
     int    { TokenInt _ $$ }
     string { TokenString _ $$ } 
     '++'   { TokenPlusString _ }
-    'SA++VE' { TokenSavePlusString _ }
+    'SA++FE' { TokenSafePlusString _ }
     PlusVar { TokenPlusVar _ }
     '+'    { TokenPlus _ }
     var    { TokenVar _ $$ }
@@ -75,9 +75,9 @@ Exp : int                                       { TmInt $1 }
     | string                                    { TmString $1 } 
     | var                                       { TmVar $1 }
     | '[' Exp ']'                               { TmList $2 }
-    | Exp '|' Exp                               { TmListSeg $1 $3 }
+    | Str '|' Str                               { TmListSeg $1 $3 }
     | Exp '++' Exp                              { TmAddString $1 $3 }
-    | Str 'SA++VE' Str                          { TmSaveAddString $1 $3 }
+    | Str 'SA++FE' Str                          { TmSafeAddString $1 $3 }
     | Exp PlusVar Exp                           { TmPlusVar $1 $3 }
     | Exp '+' Exp                               { TmAdd $1 $3 }
     | Let '(' var ':' Type ')' '=' Exp          { TmLet $3 $5 $8 }
@@ -103,7 +103,8 @@ Exp : int                                       { TmInt $1 }
 --    | fst Exp                                   { TmFst $2 }
 --    | snd Exp                                   { TmSnd $2 }
 --    | If Exp Then Exp Else Exp                  { TmIf $2 $4 $6 } 
-Str : Str 'SA++VE' Str                              { TsAddString $1 $3}
+Str : Str 'SA++FE' Str                          { TsAddString $1 $3}
+    | Str '|' Str                               { TsListSeg $1 $3 }
     | string                                    { TsString $1 }
 
 Type : 
@@ -125,9 +126,9 @@ data StqlType = TyInt | TyString
 type Environment = [ (String,Expr) ]
 data Expr = TmInt Int | TmString String 
             | TmAdd Expr Expr | TmVar String 
-            | TmAddString Expr Expr | TmSaveAddString Str Str
+            | TmAddString Expr Expr | TmSafeAddString Str Str
             | TmLet String StqlType Expr
-            | TmList Expr | TmListSeg Expr Expr
+            | TmList Expr | TmListSeg Str Str
             | TmPrint Expr | TmPlusVar Expr Expr
             | TmGetVar String | TmReadEnv | TmFormat Expr
             | TmFillBasePrefixReady String 
@@ -144,7 +145,7 @@ data Expr = TmInt Int | TmString String
 --            | TmIf Expr Expr Expr 
 --            | TmFst Expr | TmSnd Expr 
     deriving (Show,Eq)
-data Str = TsAddString Str Str | TsString String
+data Str = TsAddString Str Str | TsListSeg Str Str | TsString String
     deriving (Show,Eq)
 
 } 
