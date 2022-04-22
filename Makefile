@@ -21,7 +21,8 @@ Stql: $(DEPEND) Stql.hs
 StqlGrammar.hs : StqlGrammar.y
 	@rm -f StqlGrammar.hs
 	happy StqlGrammar.y
-	@chmod -w StqlGrammar.hs
+	happy StqlGrammar.y --info
+	@chmod 755 StqlGrammar.hs
 
 # Generate ML files from a lexer definition file
 StqlTokens.hs : StqlTokens.x
