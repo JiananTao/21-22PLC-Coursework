@@ -12,6 +12,7 @@ import StqlTokens
     int    { TokenInt _ $$ }
     string { TokenString _ $$ } 
     '++'   { TokenPlusString _ }
+    'SA++VE' { TokenSavePlusString _ }
     PlusVar { TokenPlusVar _ }
     '+'    { TokenPlus _ }
     var    { TokenVar _ $$ }
@@ -76,7 +77,8 @@ Exp : int                                       { TmInt $1 }
     | '[' Exp ']'                               { TmList $2 }
     | Exp '|' Exp                               { TmListSeg $1 $3 }
     | Exp '++' Exp                              { TmAddString $1 $3 }
-    | Exp PlusVar Exp                         { TmPlusVar $1 $3 }
+    | Str 'SA++VE' Str                          { TmSaveAddString $1 $3 }
+    | Exp PlusVar Exp                           { TmPlusVar $1 $3 }
     | Exp '+' Exp                               { TmAdd $1 $3 }
     | Let '(' var ':' Type ')' '=' Exp          { TmLet $3 $5 $8 }
     | Clear '(' var ':' Type ')'                { TmClear $3 $5 }
@@ -89,8 +91,8 @@ Exp : int                                       { TmInt $1 }
     | GetVars var                               { TmGetVar $2 }
     | ReadEnv                                   { TmReadEnv }
     | Format Exp                                { TmFormat $2 }
-    | FillBasePrefixReady var                            { TmFillBasePrefixReady $2}
-    | ProcSemicComma var                             { TmProcSemicComma $2}
+    | FillBasePrefixReady var                   { TmFillBasePrefixReady $2}
+    | ProcSemicComma var                        { TmProcSemicComma $2}
     | Delimit string Exp In var                 { TmDelimit $2 $3 $5 }
     | Compare string var In string var          { TmCompare $2 $3 $5 $6 }
     | LiteralsNum var                           { TmLiteralsNum $2 }
@@ -101,6 +103,8 @@ Exp : int                                       { TmInt $1 }
 --    | fst Exp                                   { TmFst $2 }
 --    | snd Exp                                   { TmSnd $2 }
 --    | If Exp Then Exp Else Exp                  { TmIf $2 $4 $6 } 
+Str : Str 'SA++VE' Str                              { TsAddString $1 $3}
+    | string                                    { TsString $1 }
 
 Type : 
      Int                      { TyInt } 
@@ -108,9 +112,6 @@ Type :
 --   | Bool                     { TyBool } 
 --     | Unit                     { TyUnit }
 --     | '(' Type ',' Type ')'    { TyPair $2 $4 }
-
---只支持string目前
---List : string '|' string                               { TmListSeg $1 $3 }
 
 
 { 
@@ -124,7 +125,7 @@ data StqlType = TyInt | TyString
 type Environment = [ (String,Expr) ]
 data Expr = TmInt Int | TmString String 
             | TmAdd Expr Expr | TmVar String 
-            | TmAddString Expr Expr
+            | TmAddString Expr Expr | TmSaveAddString Str Str
             | TmLet String StqlType Expr
             | TmList Expr | TmListSeg Expr Expr
             | TmPrint Expr | TmPlusVar Expr Expr
@@ -143,7 +144,7 @@ data Expr = TmInt Int | TmString String
 --            | TmIf Expr Expr Expr 
 --            | TmFst Expr | TmSnd Expr 
     deriving (Show,Eq)
---data Test = TmListSeg String String 
---    deriving (Show,Eq)
+data Str = TsAddString Str Str | TsString String
+    deriving (Show,Eq)
 
 } 

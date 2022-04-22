@@ -34,6 +34,7 @@ data Expr = TmInt Int | TmString String
 --           | HIf Expr Expr Environment
 --           | HPair Expr Environment | PairH Expr
 --           | FstH | SndH 
+data StrFrame = HPlusStr Str | PlusHStr Str
 data Frame =
            HAdd Expr Environment | AddH Expr
            | HPlus Expr Environment | PlusH Expr
@@ -79,6 +80,13 @@ whichExp (TmInt _) = "Int"
 whichExp (TmVar _) = "Var"
 whichExp _ = error ""
 
+evalStr :: (Str, Str, [StrFrame]) -> String
+evalStr ((TsAddString s1 s2),s,k) = evalStr (s1, s2, (HPlusStr s):k)
+evalStr ((TsString s1), (TsString s2), k) = evalStr' ((TsString s1), (HPlusStr (TsString s2)):k) 
+evalStr' :: (Str, [StrFrame]) -> String
+evalStr' (s1, (HPlusStr s):k) = evalStr' ((TsString (rmQuo (unparseStr s1) ++ rmQuo(unparseStr s))), k)
+evalStr' (s1, []) = unparseStr s1
+
 {-
 --eval1 is the main function, which is used to pattern match each grammar and make corresponding processing
 --
@@ -121,9 +129,11 @@ eval1 (TmInt n,env1,(HAdd e env2):k,r,p) = (e,env2 ++ env1,AddH (TmInt n) : k,r,
 eval1 (TmInt m,env,(AddH (TmInt n)):k,r,p) = (TmInt (n + m),env,k,r,p)
 
 -- Evaluation rules for plus string operator
+eval1 (TmSaveAddString e1 e2,env,k,r,p) = (TmString (evalStr (e1, e2, [])),env,k,r,p)
 eval1 (TmAddString e1 e2,env,k,r,p) = (e1,env,HPlus e2 env:k,r,p)
 eval1 (TmString n,env1,(HPlus e env2):k,r,p) = (e,env2 ++ env1,PlusH (TmString (rmQuo n)) : k,r,p)
 eval1 (TmString m,env,(PlusH (TmString n)):k,r,p) = (TmString (n ++ rmQuo m),env,k,r,p)
+
 
 -- Evaluation rules for List operator
 eval1 (TmList e,env,k,r,p) = (e,env,k ++ [List],r,p)
@@ -461,9 +471,11 @@ eval (e,env,k,r,p) | e' == e && isValue e' && null k && null p  = r'
             where (e',env',k',r',p') = eval1 (e,env,k,r,p)
 --Function to unparse underlying values from the AST term
 unparse :: Expr -> String
-unparse (TmString n) =  n
+unparse (TmString n) = n
 unparse (TmInt n) = show n
 unparse _ = "Unknown"
+unparseStr :: Str -> String
+unparseStr (TsString n) = n
 unparseAll :: [Expr] -> [String]
 unparseAll = map unparse
 {-------------------------------------------------------------------------------------------
