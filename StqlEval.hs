@@ -34,8 +34,8 @@ data Expr = TmInt Int | TmString String
 --           | HIf Expr Expr Environment
 --           | HPair Expr Environment | PairH Expr
 --           | FstH | SndH 
-data StrFrame = HPlusStr Str | PlusHStr Str
-              | HListStr Str | ListHStr Str
+data StrFrame = HPlusStr String | PlusHStr Str
+              | HListStr String | ListHStr Str
 data Frame =
            HAdd Expr Environment | AddH Expr
            | HPlus Expr Environment | PlusH Expr
@@ -81,14 +81,14 @@ whichExp _ = error ""
 --evalStr is one of the main functions, which used for '|' and 'SA++FE'
 --to make sure they just have String input
 -}
-evalStr :: (Str, Str, [StrFrame]) -> String
+evalStr :: (String, Str, [StrFrame]) -> String
 evalStr (s,(TsAddString s1 s2),k) = evalStr (s1, s2, (HPlusStr s):k)
 evalStr (s,(TsListSeg s1 s2),k) = evalStr (s1, s2, (HListStr s):k)
-evalStr ((TsString s1), (TsString s2), (HPlusStr s):k) = evalStr' ((TsString s1), (HPlusStr (TsString s2)):((HPlusStr s):k)) 
-evalStr ((TsString s1), (TsString s2), (HListStr s):k) = evalStr' ((TsString s1), (HListStr (TsString s2)):((HListStr s):k))
+evalStr (s1, (TsString s2), (HPlusStr s):k) = evalStr' ((TsString s1), (HPlusStr s2):((HPlusStr s):k)) 
+evalStr (s1, (TsString s2), (HListStr s):k) = evalStr' ((TsString s1), (HListStr s2):((HListStr s):k))
 evalStr' :: (Str, [StrFrame]) -> String
-evalStr' (s1, (HPlusStr s):k) = evalStr' ((TsString (rmQuo (unparseStr s1) ++ rmQuo(unparseStr s))), k)
-evalStr' (s1, (HListStr s):k) = evalStr' ((TsString (rmQuo (unparseStr s1) ++ "\n" ++ rmQuo(unparseStr s))), k)
+evalStr' (s1, (HPlusStr s):k) = evalStr' ((TsString (rmQuo (unparseStr s1) ++ rmQuo s)), k)
+evalStr' (s1, (HListStr s):k) = evalStr' ((TsString (rmQuo (unparseStr s1) ++ "\n" ++ rmQuo s)), k)
 evalStr' (s1, []) = unparseStr s1
 {-
 --eval1 is the main function, which is used to pattern match each grammar and make corresponding processing

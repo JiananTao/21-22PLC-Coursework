@@ -61,9 +61,9 @@ Exp : int                                       { TmInt $1 }
     | string                                    { TmString $1 } 
     | var                                       { TmVar $1 }
     | '[' Exp ']'                               { TmList $2 }
-    | Str '|' Str                               { TmListSeg $1 $3 }
+    | string '|' Str                               { TmListSeg $1 $3 }
     | Exp '++' Exp                              { TmAddString $1 $3 }
-    | Str 'SA++FE' Str                          { TmSafeAddString $1 $3 }
+    | string 'SA++FE' Str                          { TmSafeAddString $1 $3 }
     | Exp PlusVar Exp                           { TmPlusVar $1 $3 }
     | Exp '+' Exp                               { TmAdd $1 $3 }
     | Let '(' var ':' Type ')' '=' Exp          { TmLet $3 $5 $8 }
@@ -83,9 +83,9 @@ Exp : int                                       { TmInt $1 }
     | Compare string var In string var          { TmCompare $2 $3 $5 $6 }
     | LiteralsNum var                           { TmLiteralsNum $2 }
 
-Str : Str 'SA++FE' Str                          { TsAddString $1 $3}
-    | Str '|' Str                               { TsListSeg $1 $3 }
-    | string                                    { TsString $1 }
+Str : string 'SA++FE' Str                          { TsAddString $1 $3}
+    | string '|' Str                               { TsListSeg $1 $3 }
+    | string                                       { TsString $1 }
 
 Type : 
      Int                      { TyInt } 
@@ -102,9 +102,9 @@ data StqlType = TyInt | TyString
 type Environment = [ (String,Expr) ]
 data Expr = TmInt Int | TmString String 
             | TmAdd Expr Expr | TmVar String 
-            | TmAddString Expr Expr | TmSafeAddString Str Str
+            | TmAddString Expr Expr | TmSafeAddString String Str
             | TmLet String StqlType Expr
-            | TmList Expr | TmListSeg Str Str
+            | TmList Expr | TmListSeg String Str
             | TmPrint Expr | TmPlusVar Expr Expr
             | TmGetVar String | TmReadEnv | TmFormat Expr
             | TmFillBasePrefixReady String 
@@ -116,7 +116,7 @@ data Expr = TmInt Int | TmString String
             | TmEnd Expr Expr | TmEnd2 Expr
             | TmReadTTLFile String
     deriving (Show,Eq)
-data Str = TsAddString Str Str | TsListSeg Str Str | TsString String
+data Str = TsAddString String Str | TsListSeg String Str | TsString String
     deriving (Show,Eq)
 
 } 
