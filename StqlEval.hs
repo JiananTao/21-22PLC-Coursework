@@ -244,12 +244,25 @@ pcLiteralsNum s = (unlines $ sort $ [ r'' |
 --fromResult will return perfectly formatted results, fromResult' is the processing of semantically identical items
 --   .
 formatResultF :: [String] -> [String]
-formatResultF l = sort $ nub $ [ r' | r <- formatResult' (formatResult l),
+formatResultF l = [ r' | r <- formatType' (formatType (formatResult' (formatResult l))),
                         let r' = replace "  " " " r]
 formatResult :: [String] -> [String]
 formatResult l = nub [ s'' | s <- l, let s' = replace ". " "" (filter (/=' ') s ++ "  ."),
                                      let s'' = replace "  " " " $ reverse (replaceFirst  '>' " >" (reverse s'))]
-
+typeSort :: String -> String
+typeSort s | isInfixOf "\"" s = "4"
+           | isInfixOf "http://" s = "1"
+           | isInfixOf "true" s = "3"
+           | isInfixOf "false" s = "3"
+           | ifAllDigit s = "2"
+           | otherwise = s
+formatType :: [String] -> [String]
+formatType l =  sort $ nub $ [ r' | (r1,r2,r3,rr) <- splitTriples l,let r' = if isInfixOf "<http://" r3 then r1 ++ r2 ++ typeSort r3 ++ r3 ++ " ." else   r1 ++ r2  ++ typeSort r3 ++ " " ++ r3 ++ " ." ]                                                              
+formatType' :: [String] -> [String]                                                                   
+formatType' l = [ r' | r <- l, let r' = (replace ">4" ">" (replace ">3" ">" (replace ">2" ">" (replace ">1" ">" r))))]
+--let r' = r1 ++ r2 ++ " " ++ r3 ++ " ."
+--let r3' = replace ". ." "" r3
+--for something like +50 and 50 same means
 formatResult' :: [String] -> [String]
 formatResult' l =  sort $ [ r' | (r1,r2,r3,rr) <- splitTriples l, ifAllDigit r3, let r' = r1 ++ r2 ++ " " ++ show (readInt r3) ++ " ."]
                    ++ [ rr | (r1,r2,r3,rr) <- splitTriples l, not $ ifAllDigit r3]
@@ -365,8 +378,8 @@ clearAll env = [ (y,e2) | (y,e2) <- env, y == "foo.ttl" || y == "bar.ttl" ]
 --
 -}
 splitTriples :: [String] -> [(String,String,String,String)]
-splitTriples l = [ (r1,r2,r3,r') | s <- l, let s' = filter (/=' ') s,
-                                         let i3 = rmMaybe (elemIndex '>' (reverse s')),
+splitTriples l = [ (r1, replace ">." ">" r2,replace ".<" "<" r3,r') | s <- l, let s' = filter (/=' ') s,
+                                         let i3 = if length ((elemIndices '>' (reverse s'))) == 2 then (elemIndices '>' (reverse s')) !! 0 else ((elemIndices '>' (reverse s')) !! 1),
                                          let r3 = init $ reverse ( take i3 (reverse s')),
                                          let i1 = rmMaybe (elemIndex '>' s'),
                                          let r1 = init $ take (i1+2) s',
