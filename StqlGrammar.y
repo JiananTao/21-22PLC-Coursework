@@ -60,8 +60,7 @@ import StqlTokens
 Exp : int                                       { TmInt $1 } 
     | string                                    { TmString $1 } 
     | var                                       { TmVar $1 }
-    | '[' Exp ']'                               { TmList $2 }
-    | string '|' Str                            { TmListSeg $1 $3 }
+    | '[' string '|' Str ']'                    { TmList $2 $4 }
     | Exp '++' Exp                              { TmAddString $1 $3 }
     | string 'SA++FE' Str                       { TmSafeAddString $1 $3 }
     | Exp PlusVar Exp                           { TmPlusVar $1 $3 }
@@ -105,7 +104,7 @@ data Expr = TmInt Int | TmString String
             | TmAdd Expr Expr | TmVar String 
             | TmAddString Expr Expr | TmSafeAddString String Str
             | TmLet String StqlType Expr
-            | TmList Expr | TmListSeg String Str
+            | TmList String Str 
             | TmPrint Expr | TmPlusVar Expr Expr
             | TmGetVar String | TmReadEnv | TmFormat Expr
             | TmFillBasePrefixReady String 

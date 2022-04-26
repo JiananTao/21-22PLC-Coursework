@@ -136,8 +136,7 @@ eval1 (TmString m,env,(PlusH (TmString n)):k,r,p) = (TmString (n ++ rmQuo m),env
 
 
 -- Evaluation rules for List operator
-eval1 (TmList e,env,k,r,p) = (e,env,k ++ [List],r,p)
-eval1 (TmListSeg e1 e2,env,k,r,p) = (TmString (evalStr (e1, e2, [])),env,k,r,p)
+eval1 (TmList e1 e2,env,k,r,p) = (TmString (evalStr (e1, e2, [])),env,k ++ [List],r,p)
 
 
 -- Evaluation rules for GetVar blocks
@@ -229,12 +228,12 @@ pcCompare s1 f1 s2 f2 | s1 == "Obj" && s2 == "Subj" = unlines $ nub $ [r1 |
 --For LiteralsNum Function
 pcLiteralsNum :: [String] -> String
 pcLiteralsNum s = (unlines $ sort $ [ r'' |
-                  (r1,r2,r3,r') <- splitTriples s, ifHasDigit r3,
+                  (r1,r2,r3,r') <- splitTriples s, ifAllDigit r3,
                   readInt r3 < 0 || readInt r3 > 99,
                   let r'' = r1 ++ " <http://www.cw.org/problem5/#inRange> false ."
                   ]) ++ (
                   unlines $ sort $ [ r'' |
-                  (r1,r2,r3,r') <- splitTriples s, ifHasDigit r3,
+                  (r1,r2,r3,r') <- splitTriples s, ifAllDigit r3,
                   readInt r3 >= 0 && readInt r3 <= 99,
                   let r'' = r1 ++ r2 ++ show (readInt r3 + 1) ++ "\n" ++ r1 ++ " <http://www.cw.org/problem5/#inRange> true ."
                   ])
@@ -396,7 +395,7 @@ replaceFirst old new s = take (i) s ++ new ++ snd (splitAt (i+1) s)
 ifHasDigit :: String  -> Bool
 ifHasDigit s = not $ null [ r | r <- s, isDigit r]
 ifAllDigit :: String  -> Bool
-ifAllDigit s = not (null ([ r | r <- s])) && (length [ r | r <- s]) == length ([ r | r <- s, isDigit r || (r == '+') || (r == '-')])
+ifAllDigit s = not (null [ r | r <- s]) && (length [ r | r <- s]) == length ([ r | r <- s, isDigit r || (r == '+') || (r == '-')])
 --TODO: use filter to remove space
 readInt :: String -> Int
 readInt s | eqString s "+" = read (tail s)

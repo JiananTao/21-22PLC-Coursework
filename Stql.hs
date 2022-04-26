@@ -19,6 +19,9 @@ main' = do (fileName : _ ) <- getArgs
            putStrLn ("Tokens as " ++ show resultAlex ++ "\n")
            let parsedProg = parseCalc resultAlex
            putStrLn ("Parsed as " ++ show parsedProg ++ "\n")
+           --putStrLn ("Type Checking" ++ "\n")
+           --let typedProg = typeOf [] parsedProg
+           --putStrLn ("Type Checking Passed with type " ++ (unparseType typedProg) ++ "\n") 
            let result = unlines $ reverse (unparseAll (evalLoop sourceBar sourceFoo parsedProg))
            putStrLn ("Result as \n" ++ result)
            writeFile "out.ttl" result
@@ -26,4 +29,3 @@ noParse :: ErrorCall -> IO ()
 noParse e = do let err =  show e
                hPutStr stderr err
                return ()
-

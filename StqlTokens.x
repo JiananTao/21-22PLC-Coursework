@@ -36,7 +36,7 @@ tokens :-
   GetVars        { tok (\p s -> TokenGetVar p) }
   ReadEnv        { tok (\p s -> TokenReadEnv p) }
   Format         { tok (\p s -> TokenFormat p) }
-  ProcSemicComma      { tok (\p s -> TokenProcSemicComma p) }
+  ProcSemicComma { tok (\p s -> TokenProcSemicComma p) }
   Delimit        { tok (\p s -> TokenDelimit p) }
   In             { tok (\p s -> TokenIn p) }
   Compare        { tok (\p s -> TokenCompare p) }
@@ -78,8 +78,8 @@ data StqlToken =
   TokenReadFile AlexPosn         |
   TokenGetVar AlexPosn           |
   TokenFilePath AlexPosn String  |
-  TokenFillBasePrefixReady AlexPosn       |
-  TokenProcSemicComma AlexPosn        | 
+  TokenFillBasePrefixReady AlexPosn |
+  TokenProcSemicComma AlexPosn   | 
   TokenFormat AlexPosn           |
   TokenDelimit AlexPosn          |
   TokenCompare AlexPosn          |
