@@ -12,7 +12,6 @@ import StqlTokens
     int    { TokenInt _ $$ }
     string { TokenString _ $$ } 
     '++'   { TokenPlusString _ }
-    'SA++FE' { TokenSafePlusString _ }
     PlusVar { TokenPlusVar _ }
     '+'    { TokenPlus _ }
     var    { TokenVar _ $$ }
@@ -62,7 +61,6 @@ Exp : int                                       { TmInt $1 }
     | var                                       { TmVar $1 }
     | '[' string '|' Str ']'                    { TmList $2 $4 }
     | Exp '++' Exp                              { TmAddString $1 $3 }
-    | string 'SA++FE' Str                       { TmSafeAddString $1 $3 }
     | Exp PlusVar Exp                           { TmPlusVar $1 $3 }
     | Exp '+' Exp                               { TmAdd $1 $3 }
     | Let '(' var ':' Type ')' '=' Exp          { TmLet $3 $5 $8 }
@@ -82,8 +80,7 @@ Exp : int                                       { TmInt $1 }
     | Compare string var In string var          { TmCompare $2 $3 $5 $6 }
     | LiteralsNum var                           { TmLiteralsNum $2 }
 
-Str : string 'SA++FE' Str                          { TsAddString $1 $3}
-    | string '|' Str                               { TsListSeg $1 $3 }
+Str : string '|' Str                               { TsListSeg $1 $3 }
     | string                                       { TsString $1 }
 
 Type : 
@@ -102,7 +99,7 @@ data StqlType = TyInt | TyString
 type Environment = [ (String,Expr) ]
 data Expr = TmInt Int | TmString String 
             | TmAdd Expr Expr | TmVar String 
-            | TmAddString Expr Expr | TmSafeAddString String Str
+            | TmAddString Expr Expr
             | TmLet String StqlType Expr
             | TmList String Str 
             | TmPrint Expr | TmPlusVar Expr Expr

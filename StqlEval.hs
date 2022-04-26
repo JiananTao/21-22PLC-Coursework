@@ -75,11 +75,10 @@ whichExp (TmVar _) = "Var"
 whichExp _ = error ""
 
 {-
---evalStr is one of the main functions, which used for '|' and 'SA++FE'
+--evalStr is one of the main functions, which used for '|'
 --to make sure they just have String input
 -}
 evalStr :: (String, Str, [StrFrame]) -> String
-evalStr (s,(TsAddString s1 s2),k) = evalStr (s1, s2, (HPlusStr s):k)
 evalStr (s,(TsListSeg s1 s2),k) = evalStr (s1, s2, (HListStr s):k)
 evalStr (s1, (TsString s2), (HPlusStr s):k) = evalStr' ((TsString s1), (HPlusStr s2):((HPlusStr s):k)) 
 evalStr (s1, (TsString s2), (HListStr s):k) = evalStr' ((TsString s1), (HListStr s2):((HListStr s):k))
@@ -129,7 +128,6 @@ eval1 (TmInt n,env1,(HAdd e env2):k,r,p) = (e,env2 ++ env1,AddH (TmInt n) : k,r,
 eval1 (TmInt m,env,(AddH (TmInt n)):k,r,p) = (TmInt (n + m),env,k,r,p)
 
 -- Evaluation rules for plus string operator
-eval1 (TmSafeAddString e1 e2,env,k,r,p) = (TmString (evalStr (e1, e2, [])),env,k,r,p)
 eval1 (TmAddString e1 e2,env,k,r,p) = (e1,env,HPlus e2 env:k,r,p)
 eval1 (TmString n,env1,(HPlus e env2):k,r,p) = (e,env2 ++ env1,PlusH (TmString (rmQuo n)) : k,r,p)
 eval1 (TmString m,env,(PlusH (TmString n)):k,r,p) = (TmString (n ++ rmQuo m),env,k,r,p)

@@ -16,7 +16,6 @@ tokens :-
   Int            { tok (\p s -> TokenTypeInt p) }
   String         { tok (\p s -> TokenTypeString p) }
   $digit+        { tok (\p s -> TokenInt p (read s)) }
-  "SA++FE"       { tok (\p s -> TokenSafePlusString p) } 
   "++"           { tok (\p s -> TokenPlusString p) }    
   PlusVar        { tok (\p s -> TokenPlusVar p )}      
   \+             { tok (\p s -> TokenPlus p) }
@@ -61,7 +60,6 @@ data StqlToken =
   TokenString AlexPosn String    |
   TokenPlus AlexPosn             |
   TokenPlusString AlexPosn       |
-  TokenSafePlusString AlexPosn   |
   TokenPlusVar AlexPosn          |
   TokenHasType AlexPosn          |
   TokenLet AlexPosn              |
@@ -95,7 +93,6 @@ tokenPosn (TokenInt  (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenString  (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenPlus  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenPlusString  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenSafePlusString  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenPlusVar  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenHasType (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenLet (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
