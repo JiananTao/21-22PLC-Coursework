@@ -82,6 +82,7 @@ evalStr :: (String, Str, [StrFrame]) -> String
 evalStr (s,(TsListSeg s1 s2),k) = evalStr (s1, s2, (HListStr s):k)
 evalStr (s1, (TsString s2), (HPlusStr s):k) = evalStr' ((TsString s1), (HPlusStr s2):((HPlusStr s):k)) 
 evalStr (s1, (TsString s2), (HListStr s):k) = evalStr' ((TsString s1), (HListStr s2):((HListStr s):k))
+evalStr (s1, (TsString s2), k) = evalStr' ((TsString s1), (HListStr s2):k)
 evalStr' :: (Str, [StrFrame]) -> String
 evalStr' (s1, (HPlusStr s):k) = evalStr' ((TsString (rmQuo (unparseStr s1) ++ rmQuo s)), k)
 evalStr' (s1, (HListStr s):k) = evalStr' ((TsString (rmQuo (unparseStr s1) ++ "\n" ++ rmQuo s)), k)

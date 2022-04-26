@@ -7,7 +7,7 @@
 #   
 
 # Files that need to be generated from other files
-DEPEND += StqlTokens.hs StqlGrammar.hs StqlEval.hs
+DEPEND += StqlTokens.hs StqlGrammar.hs StqlEval.hs StqlTypes.hs
 
 # When "make" is invoked with no arguments, we build an executable 
 #  after building everything that it depends on
@@ -16,6 +16,10 @@ all: $(DEPEND) Stql
 # Build an executable for Stql interpreter
 Stql: $(DEPEND) Stql.hs
 	ghc Stql.hs
+
+# Generate ML files from a parser definition file
+StqlTypes: StqlTypes.hs
+	ghc StqlTypes.hs
 
 # Generate ML files from a parser definition file
 StqlGrammar.hs : StqlGrammar.y
