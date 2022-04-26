@@ -9,29 +9,6 @@ import Data.Maybe (isNothing)
 import Data.List (isPrefixOf)
 import Data.List (sort)
 
-
-{-
-data StqlType = TyInt | TyString 
-   deriving (Show,Eq)
-type Environment = [ (String,Expr) ]
-data Expr = TmInt Int | TmString String 
-            | TmAdd Expr Expr | TmVar String 
-            | TmAddString Expr Expr
-            | TmLet String StqlType Expr
-            | TmList Expr | TmListSeg Expr Expr
-            | TmPrint Expr | TmPlusVar Expr Expr
-            | TmGetVar String | TmReadEnv | TmFormat Expr
-            | TmFillBasePrefixReady String 
-            | TmProcSemicComma String 
-            | TmClear String StqlType | TmClearAll
-            | TmLiteralsNum String
-            | TmDelimit String Expr String 
-            | TmCompare String String String String
-            | TmEnd Expr Expr | TmEnd2 Expr
-            | TmReadTTLFile String
-    deriving (Show,Eq)
--}
-
 data StrFrame = HPlusStr String | PlusHStr Str
               | HListStr String | ListHStr Str
 data Frame =
@@ -120,8 +97,9 @@ eval1 (TmClear x typ,env,k,r,p) = (TmString ("clear " ++ x),clear env x,k,r,p)
 eval1 (TmClearAll,env,k,r,p) = (TmString "ClearAll excpet pre-load file",clearAll env,k,r,p)
 
 -- Rule for read file evaluations Read a pre-stored file string
-eval1 (TmReadTTLFile s,env,k,r,p) | s /= "\"bar.ttl\"" && s /= "\"foo.ttl\"" = error "Only supports reading foo.ttl and bar.ttl"
-                                  | otherwise                                = (TmVar (rmQuo s),env,k,r,p)
+eval1 (TmReadTTLFile s,env,k,r,p) | s == "\"bar.ttl\""                       = (TmVar "bar.ttl",env,k,r,p)
+                                  | s == "\"foo.ttl\""                       = (TmVar "foo.ttl",env,k,r,p)
+                                  | otherwise                                = error "Only supports reading foo.ttl and bar.ttl"
 
 -- Evaluation rules for plus number operator
 eval1 (TmAdd e1 e2,env,k,r,p) = (e1,env,HAdd e2 env:k,r,p)
@@ -201,8 +179,28 @@ eval1 (v,env,List:k,r,p) | isValue v = (v,env,[],r,p)
 -- Rule for runtime errors
 eval1 (e,env,k,r,p) = error "Unknown Evaluation Error"
 
+{-------------------------------------------------------------------------------------------
+--These are the function main programs
+--Responsible for docking with the main method in Stql.hs
+--
+-}
+--Function to iterate the small step reduction to termination
+evalLoop :: (Expr, Environment, Kontinuation, Result, Processing) -> State
+evalLoop (e,env,k,r,p) | e' == e && isValue e' && null k && null p  = (e',env',k',r',p')
+                       | otherwise                                  = evalLoop (e',env',k',r',p')
+            where (e',env',k',r',p') = eval1 (e,env,k,r,p)
 
-
+--Function to unparse underlying values from the AST term
+unparse :: Expr -> String
+unparse (TmString n) = n
+unparse (TmInt n) = show n
+unparse _ = "Unknown"
+unparseStr :: Str -> String
+unparseStr (TsString n) = n
+unparseAll :: State -> [String]
+unparseAll e = map unparse (getFourth e)
+getFourth :: State -> [Expr]
+getFourth (a,b,c,d,e) = d
 {-------------------------------------------------------------------------------------------
 --*The GetVars function must be run in advance to fill in the parameters in the file
 --These are the ways to get the fill ttl file incomplete
@@ -467,27 +465,6 @@ split delim str =
                                         else split delim
                                                  (drop (length delim) x)
 
-{-------------------------------------------------------------------------------------------
---These are the function main programs
---Responsible for docking with the main method in Stql.hs
---
--}
---Function to iterate the small step reduction to termination
-evalLoop :: String -> String -> Expr -> [Expr]
-evalLoop bar foo e = eval (e,[("bar.ttl",TmString bar),("foo.ttl",TmString foo)],[],[],[])
-eval :: (Expr, Environment, Kontinuation, Result, Processing) -> [Expr]
-eval (e,env,k,r,p) | e' == e && isValue e' && null k && null p  = r'
-                   | otherwise                                  = eval (e',env',k',r',p')
-            where (e',env',k',r',p') = eval1 (e,env,k,r,p)
---Function to unparse underlying values from the AST term
-unparse :: Expr -> String
-unparse (TmString n) = n
-unparse (TmInt n) = show n
-unparse _ = "Unknown"
-unparseStr :: Str -> String
-unparseStr (TsString n) = n
-unparseAll :: [Expr] -> [String]
-unparseAll = map unparse
 {-------------------------------------------------------------------------------------------
 --These are the some useless function
 --May be use in funture

@@ -43,7 +43,7 @@ tokens :-
   FillBasePrefixReady     { tok (\p s -> TokenFillBasePrefixReady p) }
   [$alpha $digit \_ \']*.ttl    { tok (\p s -> TokenFilePath p s) }
   \"$algit*\"    { tok (\p s -> TokenString p s) }
-  $alpha [$alpha $digit \_ \’]*      { tok (\p s -> TokenVar p s) }
+  $alpha+ [$alpha $digit \_ \’ ]*      { tok (\p s -> TokenVar p s) }
 
 { 
 -- Each action has type :: AlexPosn -> String -> MDLToken 
