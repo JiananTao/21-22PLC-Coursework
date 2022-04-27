@@ -23,17 +23,18 @@ main' = do (fileName : _ ) <- getArgs
            let fileList = head s
 
            let typedProg = typeLoop ([], [],[], parsedProg)
-
+           --let result = length (fileToEnv fileNameList fileList)
            let result = unlines $ (unparseAll (evalLoop (parsedProg,fileToEnv fileNameList fileList,[],[],[])))
-           
+           {-
            putStrLn ("Parsing : " ++ sourceSolution)
            putStrLn ("Tokens as " ++ show resultAlex ++ "\n")
            putStrLn ("Parsed as " ++ show parsedProg ++ "\n")
            putStrLn ("Type Checking...")
            putStrLn ("  " ++ typedProg ++ "\n") 
            putStrLn ("Result as \n" ++ result)
-           
+           -}
            putStrLn result
+           writeFile "out.txt" result
            
 noParse :: ErrorCall -> IO ()
 noParse e = do let err =  show e
@@ -41,4 +42,4 @@ noParse e = do let err =  show e
                return ()
 
 fileToEnv :: [String] -> [String] -> [(String,Expr)]
-fileToEnv na fi = [ (s1,TmString s2) | (s1,s2)<- zip na fi ]
+fileToEnv na fi = [ (s1,TmString s2) | (s1,s2) <- (zip na fi) ]

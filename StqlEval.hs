@@ -38,7 +38,10 @@ getValueBinding' (TmVar x) ((y,e):env) | x == y    = e
 getValueBinding' _ _ = error ""
 
 update :: Environment -> String -> Expr -> Environment
-update env x e1 = (x,e1) : [ (y,e2) | (y,e2) <- env, x /= y ]
+update env x e1 = (x,e1):[ (y,e2) | (y,e2) <- env, x /= y ]
+updateList :: Environment -> Environment -> Environment
+updateList [] env = env
+updateList ((y,e):es) env = updateList es (update env y e)
 -- Checks for terminated expressions
 isValue :: Expr -> Bool
 isValue (TmString _) = True
@@ -333,16 +336,18 @@ toListSort s = unlines (sort (split "\n" s))
 --
 --}
 getVarFromFile :: String -> Environment -> Environment
-getVarFromFile s env = env ++ varBase (socToList s) ++ varPrefix (socToList s) ++ varPrefixBroken (socToList s)
+getVarFromFile s env =  varBase (socToList s) $ varPrefix (socToList s) $ varPrefixBroken (socToList s) env
 --TODO：Whether it is empty or not is not detected here, that is, the default input ttl has @base
-varBase :: [String] -> Environment
-varBase l = [("BaseVar",TmString (varBaseStr l))]
+varBase :: [String] -> Environment -> Environment
+varBase l env = update env "BaseVar" (TmString (varBaseStr l))
 varBaseStr :: [String] -> String
 varBaseStr l = head [ init (filter  (\x -> x /= ' ') (s \\ "@base")) | s <- l, eqString s "@base"]
-varPrefix :: [String] -> Environment
-varPrefix l = [ procPre (s \\ "@prefix") " "  | s <- l,  eqString s "@prefix" && isInfixOf "http://" s]
-varPrefixBroken :: [String] -> Environment
-varPrefixBroken l = [ procPre (s \\ "@prefix") (varBaseStr l) | s <- l,  eqString s "@prefix" && not (isInfixOf "http://" s)]
+varPrefix :: [String] -> Environment -> Environment
+varPrefix l env = updateList [ procPre (s \\ "@prefix") " "  | s <- l,  eqString s "@prefix" && isInfixOf "http://" s] env
+
+varPrefixBroken :: [String] -> Environment -> Environment
+varPrefixBroken l env = updateList [ procPre (s \\ "@prefix") (varBaseStr l) | s <- l,  eqString s "@prefix" && not (isInfixOf "http://" s)] env
+
 procPre :: String -> String -> (String , Expr)
 procPre s a = (filter (\x -> x /= ' ' && x /= ':') (head (wordsWhen (=='<') s)),
                if a /= " " then TmString ((a \\ ">") ++ (filter  (\x -> x /= ' ' && x /= '.' ) ((wordsWhen (=='<') s !! 1))))
