@@ -1,12 +1,8 @@
---./Stql pr1.stql
-
+--./Stql pr1.stql;
 Let (foo:String) = (ReadFile "foo.ttl");
 Let (foo2:String) = (ProcSemicComma foo);
 GetVars foo2;
 Let (allF2:String) = (FillBasePrefixReady foo2);
-Clear (p:String);
-Clear (q:String);
-Clear (r:String);
 
 Let (bar:String) = (ReadFile "bar.ttl");
 Let (bar2:String) = (ProcSemicComma bar);
