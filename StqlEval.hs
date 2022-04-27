@@ -128,10 +128,10 @@ eval1 (TmFormat e, env,k,r,p) = (e,env,Format:k,r,p)
 eval1 (TmString s,env,Format:k,r,p) = (TmString s',env,k,r,p)
                            where s' = unlines $ formatResultF (socToList s)
 -- Evaluation rules for ProcSemicComma Function blocks
-eval1 (TmProcSemicComma s, env,k,r,p) = (TmString (s' ++ s''),env,k,r,p)
-                           where s' = unlines ( procProcComma (getNeedProcComma (socToList (varStr s env)))
+eval1 (TmProcSemicComma s, env,k,r,p) = (TmString (unlines (nub (s' ++ s''))),env,k,r,p)
+                           where s' = ( procProcComma (getNeedProcComma (socToList (varStr s env)))
                                                 ++ getNeedProcComma' (socToList (varStr s env)))
-                                 s'' = unlines ( procProcSemic (getNeedProcSemic (socToList (varStr s env)))
+                                 s'' = ( procProcSemic (getNeedProcSemic (socToList (varStr s env)))
                                                 ++ getNeedProcSemic' (socToList (varStr s env)))
 -- Evaluation rules for FillBasePrefixReady Function blocks
 eval1 (TmFillBasePrefixReady s, env,k,r,p) = (TmString s',env,k,r,p)
@@ -370,7 +370,7 @@ clear env x | (length [ (y,e2) | (y,e2) <- env, x /= y ]) == (length env) = erro
             | otherwise = [ (y,e2) | (y,e2) <- env, x /= y ]
 --for ClearAll Function
 clearAll :: Environment -> Environment
-clearAll env = [ (y,e2) | (y,e2) <- env, y == "foo.ttl" || y == "bar.ttl" ]
+clearAll env = [ (y,e2) | (y,e2) <- env, isInfixOf ".ttl" y ]
 
 {-------------------------------------------------------------------------------------------
 --tools and check function
