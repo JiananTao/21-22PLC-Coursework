@@ -97,9 +97,8 @@ eval1 (TmClear x typ,env,k,r,p) = (TmString ("clear " ++ x),clear env x,k,r,p)
 eval1 (TmClearAll,env,k,r,p) = (TmString "ClearAll excpet pre-load file",clearAll env,k,r,p)
 
 -- Rule for read file evaluations Read a pre-stored file string
-eval1 (TmReadTTLFile s,env,k,r,p) | s == "\"bar.ttl\""                       = (TmVar "bar.ttl",env,k,r,p)
-                                  | s == "\"foo.ttl\""                       = (TmVar "foo.ttl",env,k,r,p)
-                                  | otherwise                                = error "Only supports reading foo.ttl and bar.ttl"
+eval1 (TmReadTTLFile s,env,k,r,p) | isInfixOf ".ttl" s                       = (TmVar (rmQuo s),env,k,r,p)
+                                  | otherwise                                = error "Only supports reading *.ttl file"
 
 -- Evaluation rules for plus number operator
 eval1 (TmAdd e1 e2,env,k,r,p) = (e1,env,HAdd e2 env:k,r,p)
@@ -317,7 +316,7 @@ beFill :: Maybe Int -> Maybe Int -> String -> Environment -> String
 beFill (Just 1) (Just i') s env = let s' = take (i'-1) s in (varStr ((s !! 0):"") env \\ ">") ++ drop 2 s' ++ ">"
 beFill (Just i) (Just i') s env = let s' = take (i'-1) s in (varStr ((s !! (i-1)):"") env \\ ">") ++ drop (i + 1) s'
 beFill (Just i) Nothing s env  = (varStr ((s !! (i-1)):"") env \\ ">") ++ drop (i+1) s
-beFill _ _ s env = error "FillPrefix函数出错"
+beFill _ _ s env = error "error in FillPrefix"
 
 {-
 --Here is the function to merge sort the TTL output files

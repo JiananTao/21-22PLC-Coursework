@@ -22,6 +22,10 @@ getBinding x ((s,t):tenv) | x == s = t
 addBinding :: String -> StqlType -> TypeEnvironment -> TypeEnvironment
 addBinding x t tenv = (x,t):tenv
 
+clearBinding :: String -> TypeEnvironment -> TypeEnvironment
+clearBinding x [] = error "Variable binding not found"
+clearBinding x tenv = [ (s,t) | (s,t) <- tenv, s /= x]
+
 isValue :: Expr -> Bool
 isValue (TmString _) = True
 isValue (TmInt _) = True
@@ -43,7 +47,7 @@ typeOf' ((Processing e):p,[],tenv, (TmInt _)) = (p,[],tenv,e)
 -- Exp: string
 typeOf' ([],[],tenv, e@(TmString _)) = ([],[],tenv,e)
 typeOf' ((Processing e):p,[],tenv, (TmString _)) = (p,[],tenv,e)
-
+-- Exp: [ | ]
 typeOf' (p,k,tenv, (TmList e1 e2)) | not (isString e1) = error ("  Error in Tokens '[' '|' ']' \n" ++ 
                                               "  ListSeg only seg [string | .. | string]\n")
                                    | otherwise = (p,k,tenv, typeOfStr e2) 
@@ -64,22 +68,24 @@ typeOf' (p,k,tenv, (TmAdd e1 e2)) = (p,HAdd e2:k,tenv,e1)
 typeOf' (p,(HAdd e):k,tenv,TmInt _ ) = (p,Int:k,tenv,e)
 typeOf' (p,(HAdd e):k,tenv, _ ) = error ("  Error in Token '+' \n" ++
                                                  "  Expr '+' Expr,  \n")
-
-typeOf' (p,Int:k,tenv,TmString _) = error "  token '+' 不可连接Int和String,也可能是其他token比如PlusVar错误\n"
-typeOf' (p,String:k,tenv,TmInt _) = error "  token '++' 不可连接String和Int,也可能是其他token比如PlusVar错误\n"
+--Exp: int
+typeOf' (p,Int:k,tenv,TmString _) = error "  token '+' only accept Int type\n"
+--Exp: string
+typeOf' (p,String:k,tenv,TmInt _) = error "  token '++' only accept String type\n"
 typeOf' ( p, String:k, tenv, e) = ( p, k, tenv, e)
 typeOf' ( p, Int:k, tenv, e) = ( p, k, tenv, e)
-
+--Exp: Let
 typeOf' (p,k,tenv, (TmLet x t e)) = (p,(HLet x t):k,tenv, e)
       
---这里比较特殊，因为这里如果没有可消除的绑定变量，会自动在eval进行报错
-typeOf' (p,k,tenv, TmClear x t) = (p,k,tenv, TmString "Clear it")
+--Exp: Clear (used to test our program, avoid the memory overflow)
+typeOf' (p,k,tenv, TmClear x t) | getBinding x tenv == TyInt || getBinding x tenv == TyString = (p,k,clearBinding x tenv, TmString "Clear")
+                                | otherwise = error "Unknown error in Clear Function"
  
---这里tyoeCheck不可能报错
+--Exp: ClearAll (used to test our program, avoid the memory overflow)
 typeOf' (p,k,tenv, TmClearAll) =  (p,k,tenv, TmString "Clear All")
 
 --Exp: ';'
-typeOf' (p,k,tenv,TmEnd2 e) = (p,k,tenv,e)
+--typeOf' (p,k,tenv,TmEnd2 e) = (p,k,tenv,e)
 typeOf' (p,k,tenv,TmEnd e1 e2) = (Processing e1:p,k,tenv,e2)
 
 --Exp: Print
@@ -88,43 +94,43 @@ typeOf' (p,k,tenv,TmPrint e) = (p,k,tenv,e)
 typeOf' (p,k,tenv,TmReadTTLFile s) | (isString s) && (isInfixOf ".ttl" s) = (p,k,tenv,TmString "read file")
                                    | isString s = error ("  Error in Tokens 'ReadFile' '*.ttl' \n" ++ "  must be a *.ttl File")
                                    | otherwise  = error "  Error in Tokens 'ReadFile' '*.ttl'"
---Exp: 
+--Exp: GetVars (get the variables(label in turtle file) and store them in Environemnt )
 typeOf' (p,k,tenv,TmGetVar s) | isVar s = (p,k,tenv,TmString "get Var")
                               | otherwise  = error "  Error in Token 'GetVars'"
 
---Exp: ReadEnv
+--Exp: ReadEnv (using to test the existence of variables, might useful in the later problem)
 typeOf' (p,k,tenv,TmReadEnv) = (p,k,tenv,TmString "functional function")
 
       
---Exp: Format
+--Exp: Format (make our program as perfect output)
 typeOf' (p,k,tenv,TmFormat e) = (p,Format:k,tenv,e)
- 
---Exp: TODO
+
+--TODO:
 --typeOf' (p,k,tenv,TmFillBasePrefixReady (TmVar x)) = (p,k,tenv,(getBinding x tenv))
 typeOf' (p,k,tenv,TmFillBasePrefixReady e) | isVar e = (p,FillBasePrefixReady:k,tenv,TmString "")
-                                           | otherwise = error ("  Error in Token FillBasePrefixReady\n" ++ "  FillBasePrefixReady只能整理String")
+                                           | otherwise = error ("  Error in Token FillBasePrefixReady\n" ++ "  FillBasePrefixReady only address String")
 --Exp: ProcSemicComma
 typeOf' (p,k,tenv,TmProcSemicComma e) | isVar e = (p,ProcSemicComma:k,tenv,TmString "")
-                                      | otherwise  = error ("  Error in Token ProcSemicComma\n" ++ "  ProcSemicComma只能整理String")
+                                      | otherwise  = error ("  Error in Token ProcSemicComma\n" ++ "  ProcSemicComma only address String")
 --Exp: Delimit
 typeOf' (p,k,tenv,TmDelimit s1 e s2) | not (isString s1) || not (isVar s2) = error ("  Error in Token Delimit\n" ++ "  Delimit")
                                      | otherwise = (p,Delimit:k,tenv,e)
-
-typeOf' (p,k,tenv,TmCompare s1 v1 s2 v2) | not (isString s1 || isString s2) = error ("  Error in Token Compare\n" ++ "  Compare只能整理String")
+--Exp: Compare
+typeOf' (p,k,tenv,TmCompare s1 v1 s2 v2) | not (isString s1 || isString s2) = error ("  Error in Token Compare\n" ++ "  Compare only handle String")
                                          | getBinding v1 tenv == getBinding v2 tenv =  (p,k,tenv,TmString"Compare")
-
+--Exp: LiteralsNum
 typeOf' (p,k,tenv,TmLiteralsNum s) | not (isVar s) = error ("  Error in Token LiteralsNum\n" ++ "  LiteralsNum")
                                    | otherwise = (p,k,tenv,TmString "LiteralsNum")
 --something must be in back
 typeOf' (p,Delimit:k,tenv,e) | getType e == TyString = (p,k,tenv,e)
-                             | otherwise = error ("  Error in Token Delimit\n" ++ "  Delimit最后的变量只能储存String")
-typeOf' (p,Format:k,tenv,s) | getType s == TyString = (p,k,tenv,s)
-                            | otherwise             = error ("  Error in Token Format\n" ++ "  Format只能整理String")
+                             | otherwise = error ("  Error in Token Delimit\n" ++ "  Delimit olny handle variables bound to type String")
+typeOf' (p,Format:k,tenv,s) | getType s  == TyString = (p,k,tenv,s)
+                            | otherwise             = error ("  Error in Token Format\n" ++ "  Format can olny handle variables bound to type String")
 typeOf' (p,FillBasePrefixReady:k,tenv,s) | getType s == TyString = (p,k,tenv,s)
-                                         | otherwise             = error ("  Error in Token FillBasePrefixReady\n" ++ "  FillBasePrefixReady只能整理String")
+                                         | otherwise             = error ("  Error in Token FillBasePrefixReady\n" ++ "  FillBasePrefixReady only handle String")
 
 typeOf' (p,ProcSemicComma:k,tenv,s) | getType s == TyString = (p,k,tenv,s)
-                                    | otherwise             = error ("  Error in Token ProcSemicComma\n" ++ "  ProcSemicComma只能整理String")
+                                    | otherwise             = error ("  Error in Token ProcSemicComma\n" ++ "  ProcSemicComma only handle String")
 typeOf' (p,(HLet x t):k,tenv, v) | isValue v && (getType v) == t = (p,k,addBinding x t tenv,v)
                                  | otherwise = error ("  Error in Tokens 'Let' 'In' \n" ++
                                                  "  Let '(' var ':' Type ')' '=' Expr ,  \n")
@@ -134,7 +140,7 @@ typeOf' (p,(HPlus e):k,tenv, _ ) = error ("  Error in Token '++' \n" ++
                                     
 typeOf' ( _, _, _, _) = error "Type Error"
 {-
---some small function to help recognize type
+--helper function to recognize type
 --
 -}
 isVar :: String -> Bool
@@ -157,10 +163,10 @@ typeToK TyInt = Int
 
 
 typeLoop :: TypeState -> String
-typeLoop (p,k,tenv, e) | e == e' && null p  = "All type correct"
-                       | otherwise          = typeLoop (p',k',tenv',e')
+typeLoop (p,k,tenv, TmEnd2 e) | e == e' && null p  = "All type correct"
+                              | otherwise          = typeLoop (p',k',tenv',TmEnd2 e')
             where (p',k',tenv',e') = typeOf' (p,k,tenv,e)
-
+typeLoop (p,k,tenv, _) = error "  each line must have‘;’as terminated symbol"
 -- Function for printing the results of the TypeCheck
 {-
 unparseType :: StqlType  -> String
