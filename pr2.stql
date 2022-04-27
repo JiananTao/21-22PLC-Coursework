@@ -4,4 +4,4 @@ GetVars foo2;
 Let (all:String) = Format (FillBasePrefixReady foo2);
 Let (all1:String) = (Delimit "Subj" "http://www.cw.org/#problem2" In all);
 Let (all2:String) = (Delimit "Obj" "true" In all1);
-Print all2;
+Print (Format all2);

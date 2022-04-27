@@ -2,17 +2,18 @@ module StqlTypes where
 import StqlGrammar
 
 import Data.Typeable
-
+import Data.List
 type TypeEnvironment = [ (String, StqlType) ]
 data Frame =
            HAdd Expr | Int
            | HPlus Expr | String 
+           | HPlusVar Expr | Delimit
+           | FillBasePrefixReady | ProcSemicComma
            | Print | Format | List 
            | Processing Expr | HLet String StqlType
 type Kontinuation = [ Frame ]
-type Result = [ StqlType ]
 type Processing = [Frame]
-type TypeState = (Result,Processing,Kontinuation,TypeEnvironment,Expr)
+type TypeState = (Processing,Kontinuation,TypeEnvironment,Expr)
 getBinding :: String -> TypeEnvironment -> StqlType
 getBinding x [] = error "Variable binding not found"
 getBinding x ((s,t):tenv) | x == s = t
@@ -20,6 +21,12 @@ getBinding x ((s,t):tenv) | x == s = t
 
 addBinding :: String -> StqlType -> TypeEnvironment -> TypeEnvironment
 addBinding x t tenv = (x,t):tenv
+
+isValue :: Expr -> Bool
+isValue (TmString _) = True
+isValue (TmInt _) = True
+isValue (TmVar _) = True
+isValue _ = False
 
 typeOfStr ::  Str -> Expr
 typeOfStr (TsListSeg e1 e2) | not (isString e1) = error ("  Error in Tokens  '[' '|' ']' \n" ++ 
@@ -29,77 +36,136 @@ typeOfStr (TsString e) = TmString "Correct"
 
 
 typeOf' :: TypeState -> TypeState
-typeOf' (r,p,k,tenv,TmEnd2 e) = (r,p,k,tenv,e)
-typeOf' (r,p,k,tenv,TmEnd e1 e2) = (r,Processing e1:p,k,tenv,e2)
 
 -- Exp: int
-typeOf' (r,[],[],tenv, e@(TmInt _)) = (TyInt:r,[],[],tenv,e)
-typeOf' (r,(Processing e):p,[],tenv, (TmInt _)) = (TyInt:r,p,[],tenv,e)
+typeOf' ([],[],tenv, e@(TmInt _)) = ([],[],tenv,e)
+typeOf' ((Processing e):p,[],tenv, (TmInt _)) = (p,[],tenv,e)
 -- Exp: string
-typeOf' (r,[],[],tenv, e@(TmString _)) = (TyString:r,[],[],tenv,e)
-typeOf' (r,(Processing e):p,[],tenv, (TmString _)) = (TyString:r,p,[],tenv,e)
--- Exp: var 
-typeOf' (r,[],[],tenv, e@(TmVar x)) = ((getBinding x tenv):r,[],[],tenv,e)
-typeOf' (r,(Processing e):p,[],tenv, (TmVar x)) = ((getBinding x tenv):r,p,[],tenv,e)
+typeOf' ([],[],tenv, e@(TmString _)) = ([],[],tenv,e)
+typeOf' ((Processing e):p,[],tenv, (TmString _)) = (p,[],tenv,e)
 
-typeOf' (r,p,k,tenv, (TmList e1 e2)) | not (isString e1) = error ("  Error in Tokens '[' '|' ']' \n" ++ 
+typeOf' (p,k,tenv, (TmList e1 e2)) | not (isString e1) = error ("  Error in Tokens '[' '|' ']' \n" ++ 
                                               "  ListSeg only seg [string | .. | string]\n")
-                                     | otherwise = (r,p,k,tenv, typeOfStr e2) 
+                                   | otherwise = (p,k,tenv, typeOfStr e2) 
 
+--Exp: ++
+typeOf' (p,k,tenv, (TmAddString e1 e2)) = (p,HPlus e2:k,tenv,e1)
 
-typeOf' (r,p,k,tenv, (TmAddString e1 e2)) = (r,p,HPlus e2:k,tenv,e1)
-typeOf' (r,p,(HPlus e):k,tenv,TmString _ ) = (r,p,String:k,tenv,e)
-typeOf' (r,p,(HPlus e):k,tenv, _ ) = error ("  Error in Token '++' \n" ++
-                                                       "  Expr '++' Expr,  \n")
-typeOf' (r,p,String:k,tenv,e@(TmInt _)) = error "  token '++' 不可连接String和Int,也可能是其他token\n"
-{-
-typeOf' (r,p,k,tenv, (TmPlusVar e1 e2)) | typeOf' k,tenv e1 == typeOf' k,tenv e2 = typeOf' k,tenv e1
-                                        | otherwise = error ("  Error in Token 'PlusVar' \n" ++
-                                                 "  Expr 'PlusVar' Expr,  \n")
-eval1 (TmPlusVar e1 e2,env,k,r,p) = (e1,env,HPlus e2 env:k,r,p)
-eval1 (TmVar n,env1,(HPlus e env2):k,r,p) = if whichExp e' == "String" then (e,env2 ++ env1,PlusH e' : k,r,p) else error "PlusVar only accept String in Var now"
-                                         where e' = getValueBinding n env1
-eval1 (TmVar m,env,(PlusH (TmString n)):k,r,p) = (TmString (toListSort (unparse e' ++ "\n" ++ n)),env,k,r,p)
-                                         where e'  = getValueBinding m env
--}
-
-typeOf' (r,p,k,tenv, (TmAdd e1 e2)) = (r,p,HAdd e2:k,tenv,e1)
-typeOf' (r,p,(HAdd e):k,tenv,TmInt _ ) = (r,p,Int:k,tenv,e)
-typeOf' (r,p,(HAdd e):k,tenv, _ ) = error ("  Error in Token '+' \n" ++
+--Exp: PlusVar
+typeOf' (p,k,tenv, (TmPlusVar e1 e2)) = (p,HPlusVar e2:k,tenv,e1)
+typeOf' (p,(HPlusVar e):k,tenv, TmVar x ) = (p,(typeToK (getBinding x tenv)):k,tenv,e)
+typeOf' (p,(HPlusVar e):k,tenv, _ ) = error ("  Error in Token 'PlusVar' \n" ++
+                                                 "  Expr 'PlusVar' Expr,  \n") 
+--Exp: var
+typeOf' (p,k,tenv, (TmVar x)) = (p,k,tenv,getExpr(getBinding x tenv))
+                            
+--Exp: +
+typeOf' (p,k,tenv, (TmAdd e1 e2)) = (p,HAdd e2:k,tenv,e1)
+typeOf' (p,(HAdd e):k,tenv,TmInt _ ) = (p,Int:k,tenv,e)
+typeOf' (p,(HAdd e):k,tenv, _ ) = error ("  Error in Token '+' \n" ++
                                                  "  Expr '+' Expr,  \n")
-typeOf' (r,p,Int:k,tenv,e@(TmString _)) = error "  token '+' 不可连接Int和String,也可能是其他token\n"
-{-
-typeOf' (r,p,k,tenv, (TmLet x t e)) | typeOf' k,tenv e == t = typeOf' (addBinding x t k,tenv) e
-                               | otherwise = error ("  Error in Tokens 'Let' 'In' \n" ++
-                                                 "  Let '(' var ':' Type ')' '=' Exp ,  \n")
---这里比较特殊，因为这里如果没有可消除的绑定变量，会自动在取出getValueBinding的error进行报错
-typeOf' (r,p,k,tenv, (TmClear x t)) = getValueBinding x t
---这里tyoeCheck不可能报错
-typeOf' (r,p,k,tenv, TmClearAll) = TyString
 
---typeOf' k,tenv (TmEnd e1 e2) r 
--}
-typeOf' (r, p, String:k, tenv, e) = (r, p, k, tenv, e)
-typeOf' (r, p, Int:k, tenv, e) = (r, p, k, tenv, e)
-typeOf' (_, _, _, _, _) = error "Type Error"
+typeOf' (p,Int:k,tenv,TmString _) = error "  token '+' 不可连接Int和String,也可能是其他token比如PlusVar错误\n"
+typeOf' (p,String:k,tenv,TmInt _) = error "  token '++' 不可连接String和Int,也可能是其他token比如PlusVar错误\n"
+typeOf' ( p, String:k, tenv, e) = ( p, k, tenv, e)
+typeOf' ( p, Int:k, tenv, e) = ( p, k, tenv, e)
+
+typeOf' (p,k,tenv, (TmLet x t e)) = (p,(HLet x t):k,tenv, e)
+      
+--这里比较特殊，因为这里如果没有可消除的绑定变量，会自动在eval进行报错
+typeOf' (p,k,tenv, TmClear x t) = (p,k,tenv, TmString "Clear it")
+ 
+--这里tyoeCheck不可能报错
+typeOf' (p,k,tenv, TmClearAll) =  (p,k,tenv, TmString "Clear All")
+
+--Exp: ';'
+typeOf' (p,k,tenv,TmEnd2 e) = (p,k,tenv,e)
+typeOf' (p,k,tenv,TmEnd e1 e2) = (Processing e1:p,k,tenv,e2)
+
+--Exp: Print
+typeOf' (p,k,tenv,TmPrint e) = (p,k,tenv,e)
+--Exp: ReadFile
+typeOf' (p,k,tenv,TmReadTTLFile s) | (isString s) && (isInfixOf ".ttl" s) = (p,k,tenv,TmString "read file")
+                                   | isString s = error ("  Error in Tokens 'ReadFile' '*.ttl' \n" ++ "  must be a *.ttl File")
+                                   | otherwise  = error "  Error in Tokens 'ReadFile' '*.ttl'"
+--Exp: 
+typeOf' (p,k,tenv,TmGetVar s) | isVar s = (p,k,tenv,TmString "get Var")
+                              | otherwise  = error "  Error in Token 'GetVars'"
+
+--Exp: ReadEnv
+typeOf' (p,k,tenv,TmReadEnv) = (p,k,tenv,TmString "functional function")
+
+      
+--Exp: Format
+typeOf' (p,k,tenv,TmFormat e) = (p,Format:k,tenv,e)
+ 
+--Exp: TODO
+--typeOf' (p,k,tenv,TmFillBasePrefixReady (TmVar x)) = (p,k,tenv,(getBinding x tenv))
+typeOf' (p,k,tenv,TmFillBasePrefixReady e) | isVar e = (p,FillBasePrefixReady:k,tenv,TmString "")
+                                           | otherwise = error ("  Error in Token FillBasePrefixReady\n" ++ "  FillBasePrefixReady只能整理String")
+--Exp: ProcSemicComma
+typeOf' (p,k,tenv,TmProcSemicComma e) | isVar e = (p,ProcSemicComma:k,tenv,TmString "")
+                                      | otherwise  = error ("  Error in Token ProcSemicComma\n" ++ "  ProcSemicComma只能整理String")
+--Exp: Delimit
+typeOf' (p,k,tenv,TmDelimit s1 e s2) | not (isString s1) || not (isVar s2) = error ("  Error in Token Delimit\n" ++ "  Delimit")
+                                     | otherwise = (p,Delimit:k,tenv,e)
+
+typeOf' (p,k,tenv,TmCompare s1 v1 s2 v2) | not (isString s1 || isString s2) = error ("  Error in Token Compare\n" ++ "  Compare只能整理String")
+                                         | getBinding v1 tenv == getBinding v2 tenv =  (p,k,tenv,TmString"Compare")
+
+typeOf' (p,k,tenv,TmLiteralsNum s) | not (isVar s) = error ("  Error in Token LiteralsNum\n" ++ "  LiteralsNum")
+                                   | otherwise = (p,k,tenv,TmString "LiteralsNum")
+--something must be in back
+typeOf' (p,Delimit:k,tenv,e) | getType e == TyString = (p,k,tenv,e)
+                             | otherwise = error ("  Error in Token Delimit\n" ++ "  Delimit最后的变量只能储存String")
+typeOf' (p,Format:k,tenv,s) | getType s == TyString = (p,k,tenv,s)
+                            | otherwise             = error ("  Error in Token Format\n" ++ "  Format只能整理String")
+typeOf' (p,FillBasePrefixReady:k,tenv,s) | getType s == TyString = (p,k,tenv,s)
+                                         | otherwise             = error ("  Error in Token FillBasePrefixReady\n" ++ "  FillBasePrefixReady只能整理String")
+
+typeOf' (p,ProcSemicComma:k,tenv,s) | getType s == TyString = (p,k,tenv,s)
+                                    | otherwise             = error ("  Error in Token ProcSemicComma\n" ++ "  ProcSemicComma只能整理String")
+typeOf' (p,(HLet x t):k,tenv, v) | isValue v && (getType v) == t = (p,k,addBinding x t tenv,v)
+                                 | otherwise = error ("  Error in Tokens 'Let' 'In' \n" ++
+                                                 "  Let '(' var ':' Type ')' '=' Expr ,  \n")
+typeOf' (p,(HPlus e):k,tenv,TmString _ ) = (p,String:k,tenv,e)
+typeOf' (p,(HPlus e):k,tenv, _ ) = error ("  Error in Token '++' \n" ++
+                                                       "  Expr '++' Expr,  \n")
+                                    
+typeOf' ( _, _, _, _) = error "Type Error"
 {-
 --some small function to help recognize type
 --
 -}
+isVar :: String -> Bool
+isVar n | (isString n) && (not (isInfixOf "\"" n)) = True
+        | otherwise = False
 isString :: (Typeable a) => a -> Bool
 isString n = typeOf n == typeOf "a"
-getFifth (a,b,c,d,e) = e
-typeLoop :: TypeState -> [ StqlType ]
-typeLoop (r,p,k,tenv, e) | e == e' && null p    = r'
-                         | otherwise            = typeLoop (r',p',k',tenv',e')
-            where (r',p',k',tenv',e') = typeOf' (r,p,k,tenv,e)
+
+getExpr :: StqlType -> Expr
+getExpr TyString = TmString ""
+getExpr TyInt = TmInt 0
+getType :: Expr -> StqlType
+getType (TmString _) = TyString
+getType (TmInt _ ) = TyInt
+
+typeToK :: StqlType -> Frame
+typeToK TyString = String
+typeToK TyInt = Int
 
 
 
+typeLoop :: TypeState -> String
+typeLoop (p,k,tenv, e) | e == e' && null p  = "All type correct"
+                       | otherwise          = typeLoop (p',k',tenv',e')
+            where (p',k',tenv',e') = typeOf' (p,k,tenv,e)
 
 -- Function for printing the results of the TypeCheck
+{-
 unparseType :: StqlType  -> String
 unparseType TyInt = "Int"
 unparseType TyString = "String"
 unparseAllType :: [StqlType]  -> [String]
 unparseAllType = map unparseType
+-}

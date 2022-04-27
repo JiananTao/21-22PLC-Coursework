@@ -362,7 +362,8 @@ listEnv :: Environment -> String
 listEnv env = unlines [ s ++ " is " ++ unparse e | (s,e) <- env, s /= "foo.ttl" && s /= "bar.ttl"]
 --for Clear Function
 clear :: Environment -> String -> Environment
-clear env x = [ (y,e2) | (y,e2) <- env, x /= y ]
+clear env x | (length [ (y,e2) | (y,e2) <- env, x /= y ]) == (length env) = error "clear binding not exist"
+            | otherwise = [ (y,e2) | (y,e2) <- env, x /= y ]
 --for ClearAll Function
 clearAll :: Environment -> Environment
 clearAll env = [ (y,e2) | (y,e2) <- env, y == "foo.ttl" || y == "bar.ttl" ]
@@ -401,7 +402,7 @@ readInt s | eqString s "+" = read (tail s)
           where s' = filter (==' ') s
 rmMaybe :: Maybe a -> a
 rmMaybe (Just a) = a
-rmMaybe Nothing = error "error in reMaybe function which means something has Nothing in Maybe a"
+rmMaybe Nothing = error ("error in reMaybe function which means something has Nothing in Maybe a\n" ++ "Maybe in Token 'Format'")
 varStr :: String -> Environment -> String
 varStr s env = unparse (getValueBinding (s \\ ['\"','\"']) env)
 

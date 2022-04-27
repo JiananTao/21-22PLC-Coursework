@@ -13,28 +13,28 @@ main = catch main' noParse
 main' :: IO ()
 main' = do (fileName : _ ) <- getArgs
            sourceSolution <- readFile fileName
-           --putStrLn ("Parsing : " ++ sourceSolution)
            let resultAlex = alexScanTokens sourceSolution
-           --putStrLn ("Tokens as " ++ show resultAlex ++ "\n")
            
            let parsedProg = parseCalc resultAlex
-           --putStrLn ("Parsed as " ++ show parsedProg ++ "\n")
            
            paths <- getCurrentDirectory >>= getDirectoryContents
            let fileNameList = filter (isInfixOf ".ttl") paths
            s <- return <$> mapM readFile (filter (isInfixOf ".ttl") paths)
            let fileList = head s
 
-           --putStrLn ("Type Checking...")
-           --let typedProg = unlines $ reverse (unparseAllType (typeLoop ([], [], [],[], parsedProg)))
-           --putStrLn ("  Passed with type \n" ++ typedProg ++ "\n") 
+           let typedProg = typeLoop ([], [],[], parsedProg)
 
            let result = unlines $ (unparseAll (evalLoop (parsedProg,fileToEnv fileNameList fileList,[],[],[])))
-           --putStrLn ("Result as \n" ++ result)
+           {-
+           putStrLn ("Parsing : " ++ sourceSolution)
+           putStrLn ("Tokens as " ++ show resultAlex ++ "\n")
+           putStrLn ("Parsed as " ++ show parsedProg ++ "\n")
+           putStrLn ("Type Checking...")
+           putStrLn ("  " ++ typedProg ++ "\n") 
+           putStrLn ("Result as \n" ++ result)
+           -}
            putStrLn result
            
-
---("bar.ttl",TmString sourceBar),("foo.ttl",TmString sourceFoo)
 noParse :: ErrorCall -> IO ()
 noParse e = do let err =  show e
                hPutStr stderr err

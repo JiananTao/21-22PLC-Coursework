@@ -5,8 +5,8 @@ Let (foo2:String) = (ProcSemicComma foo);
 GetVars foo2;
 Let (allF2:String) = (FillBasePrefixReady foo2);
 Clear (p:String);
-Clear (s:String);
-Clear (t:String);
+Clear (q:String);
+Clear (r:String);
 
 Let (bar:String) = (ReadFile "bar.ttl");
 Let (bar2:String) = (ProcSemicComma bar);
