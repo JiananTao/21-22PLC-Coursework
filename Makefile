@@ -25,7 +25,6 @@ StqlTypes: StqlTypes.hs
 StqlGrammar.hs : StqlGrammar.y
 	@rm -f StqlGrammar.hs
 	happy StqlGrammar.y
-	happy StqlGrammar.y --info
 	@chmod 755 StqlGrammar.hs
 
 # Generate ML files from a lexer definition file
