@@ -14,6 +14,7 @@ data Frame =
 type Kontinuation = [ Frame ]
 type Processing = [Frame]
 type TypeState = (Processing,Kontinuation,TypeEnvironment,Expr)
+
 getBinding :: String -> TypeEnvironment -> StqlType
 getBinding x [] = error "Variable binding not found"
 getBinding x ((s,t):tenv) | x == s = t

@@ -15,6 +15,7 @@ tokens :-
   "--".*        ; 
   Int            { tok (\p s -> TokenTypeInt p) }
   String         { tok (\p s -> TokenTypeString p) }
+  Path           { tok (\p s -> TokenTypePath p) }
   $digit+        { tok (\p s -> TokenInt p (read s)) }
   "++"           { tok (\p s -> TokenPlusString p) }    
   PlusVar        { tok (\p s -> TokenPlusVar p )}      
@@ -41,7 +42,7 @@ tokens :-
   Compare        { tok (\p s -> TokenCompare p) }
   LiteralsNum    { tok (\p s -> TokenLiteralsNum p) }
   FillBasePrefixReady     { tok (\p s -> TokenFillBasePrefixReady p) }
-  [$alpha $digit \_ \']*.ttl    { tok (\p s -> TokenFilePath p s) }
+  [$alpha $digit \_ \']*.ttl    { tok (\p s -> TokenTTLFile p s) }
   \"$algit*\"    { tok (\p s -> TokenString p s) }
   $alpha+ [$alpha $digit \_ \’ ]*      { tok (\p s -> TokenVar p s) }
 
@@ -56,6 +57,7 @@ data StqlToken =
   TokenEnd AlexPosn              |
   TokenTypeInt  AlexPosn         | 
   TokenTypeString  AlexPosn      |
+  TokenTypePath  AlexPosn      |
   TokenInt AlexPosn Int          | 
   TokenString AlexPosn String    |
   TokenPlus AlexPosn             |
@@ -75,7 +77,7 @@ data StqlToken =
   TokenVar AlexPosn String       |
   TokenReadFile AlexPosn         |
   TokenGetVar AlexPosn           |
-  TokenFilePath AlexPosn String  |
+  TokenTTLFile AlexPosn String   |
   TokenFillBasePrefixReady AlexPosn |
   TokenProcSemicComma AlexPosn   | 
   TokenFormat AlexPosn           |
@@ -89,6 +91,7 @@ data StqlToken =
 tokenPosn :: StqlToken -> String
 tokenPosn (TokenTypeInt  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenTypeString  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenTypePath  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenInt  (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenString  (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenPlus  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
@@ -117,7 +120,7 @@ tokenPosn (TokenCompare (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenIn (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenLiteralsNum (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenReadFile (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-tokenPosn (TokenFilePath (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenTTLFile (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 }
 
 

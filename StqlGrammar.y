@@ -9,6 +9,8 @@ import StqlTokens
 %token 
     Int    { TokenTypeInt _ } 
     String { TokenTypeString _ }
+    Path   { TokenTypePath _ }
+    ttl    { TokenTTLFile _ $$ }
     int    { TokenInt _ $$ }
     string { TokenString _ $$ } 
     '++'   { TokenPlusString _ }
@@ -59,6 +61,7 @@ import StqlTokens
 Exp : int                                       { TmInt $1 } 
     | string                                    { TmString $1 } 
     | var                                       { TmVar $1 }
+    | ttl                                       { TmTTLFile $1 }
     | '[' string '|' Str ']'                    { TmList $2 $4 }
     | Exp '++' Exp                              { TmAddString $1 $3 }
     | Exp PlusVar Exp                           { TmPlusVar $1 $3 }
@@ -70,7 +73,7 @@ Exp : int                                       { TmInt $1 }
     | Exp ';' Exp                               { TmEnd $3 $1}
     | Exp ';'                                   { TmEnd2 $1 }
     | Print Exp                                 { TmPrint $2 }
-    | ReadFile string                           { TmReadTTLFile $2 }
+    | ReadFile ttl                              { TmReadTTLFile $2 }
     | GetVars var                               { TmGetVar $2 }
     | ReadEnv                                   { TmReadEnv }
     | Format Exp                                { TmFormat $2 }
@@ -83,21 +86,21 @@ Exp : int                                       { TmInt $1 }
 Str : string '|' Str                               { TsListSeg $1 $3 }
     | string                                       { TsString $1 }
 
-Type : 
-     Int                      { TyInt } 
+Type : Int                      { TyInt } 
      | String                   { TyString }
+     | Path                     { TyPath }
 
 { 
 parseError :: [StqlToken] -> a
 parseError [] = error "Unknown Parse Error" 
 parseError (t:ts) = error ("Parse error at line:column " ++ (tokenPosn t))
 
-data StqlType = TyInt | TyString 
+data StqlType = TyInt | TyString | TyPath
    deriving (Show,Eq)
 --Let (x:String) = "a";
 -- (x,TmString "a")
 type Environment = [ (String,Expr) ]
-data Expr = TmInt Int | TmString String 
+data Expr = TmInt Int | TmString String | TmPath String | TmTTLFile String
             | TmAdd Expr Expr | TmVar String 
             | TmAddString Expr Expr
             | TmLet String StqlType Expr

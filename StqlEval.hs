@@ -100,7 +100,7 @@ eval1 (TmClear x typ,env,k,r,p) = (TmString ("clear " ++ x),clear env x,k,r,p)
 eval1 (TmClearAll,env,k,r,p) = (TmString "ClearAll excpet pre-load file",clearAll env,k,r,p)
 
 -- Rule for read file evaluations Read a pre-stored file string
-eval1 (TmReadTTLFile s,env,k,r,p) | isInfixOf ".ttl" s                       = (TmVar (rmQuo s),env,k,r,p)
+eval1 (TmReadTTLFile s,env,k,r,p) | isInfixOf ".ttl" s                       = (TmVar s,env,k,r,p)
                                   | otherwise                                = error "Only supports reading *.ttl file"
 
 -- Evaluation rules for plus number operator

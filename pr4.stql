@@ -1,9 +1,9 @@
-Let (foo:String) = (ReadFile "foo.ttl");
+Let (foo:String) = (ReadFile foo.ttl);
 Let (foo2:String) = (ProcSemicComma foo);
 GetVars foo2;
 Let (allF:String) = Format (FillBasePrefixReady foo2);
 
-Let (bar:String) = (ReadFile "bar.ttl");
+Let (bar:String) = (ReadFile bar.ttl);
 Let (bar2:String) = (ProcSemicComma bar);
 GetVars bar2;
 Let (allB:String) = Format (FillBasePrefixReady bar2);
