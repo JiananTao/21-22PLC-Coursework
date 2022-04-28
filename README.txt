@@ -1,4 +1,11 @@
-以下是测试文件autoTest的使用指南
+以下是脚本Makefile的使用指南
+  此脚本主要用于快速构建和快速清理，详情请联系 JiananTao
+  To use:
+    make 用于构建
+    make clean 用于清理 Stql StqlTokens.hs StqlGrammar.hs *.hi *.o *.info 文件
+
+
+以下是脚本autoTest的使用指南
   'auto' is a bash script. 
   You can run it on uglogin.ecs.soton.ac.uk if you do not use a *nix system. 
 
