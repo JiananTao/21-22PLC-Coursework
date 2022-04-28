@@ -446,7 +446,6 @@ mergeBy cmp (allx@(x:xs)) (ally@(y:ys))
     | (x `cmp` y) <= EQ = x : mergeBy cmp xs ally
     | otherwise = y : mergeBy cmp allx ys
 
---------
 replace :: Eq a => [a] -> [a] -> [a] -> [a]
 replace old new l = intercalate new . split old $ l
 spanList :: ([a] -> Bool) -> [a] -> ([a], [a])
