@@ -32,9 +32,10 @@ main' = do (fileName : _ ) <- getArgs
            putStrLn ("Type Checking...")
            putStrLn ("  " ++ typedProg ++ "\n") 
            putStrLn ("Result as \n" ++ result)
+           writeFile "out.txt" result
            -}
            putStrLn result
-           writeFile "out.txt" result
+           
            
 noParse :: ErrorCall -> IO ()
 noParse e = do let err =  show e
