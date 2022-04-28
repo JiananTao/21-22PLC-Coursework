@@ -23,17 +23,13 @@ main' = do (fileName : _ ) <- getArgs
            let fileList = head s
 
            let typedProg = typeLoop ([], [],[], parsedProg)
-           --let result = length (fileToEnv fileNameList fileList)
            let result = unlines $ (unparseAll (evalLoop (parsedProg,fileToEnv fileNameList fileList,[],[],[])))
-           {-
-           putStrLn ("Parsing : " ++ sourceSolution)
-           putStrLn ("Tokens as " ++ show resultAlex ++ "\n")
-           putStrLn ("Parsed as " ++ show parsedProg ++ "\n")
-           putStrLn ("Type Checking...")
-           putStrLn ("  " ++ typedProg ++ "\n") 
-           putStrLn ("Result as \n" ++ result)
-           writeFile "out.txt" result
-           -}
+           writeFile "out.txt" ("Parsing : " ++ sourceSolution)   
+           writeFile "out.txt" ("Tokens as " ++ show resultAlex ++ "\n")
+           writeFile "out.txt" ("Parsed as " ++ show parsedProg ++ "\n")
+           writeFile "out.txt" ("Type Checking...")
+           writeFile "out.txt" ("  " ++ typedProg ++ "\n") 
+           writeFile "out.txt" ("Result as \n" ++ result)
            putStrLn result
            
            
