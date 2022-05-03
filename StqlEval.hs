@@ -2,18 +2,18 @@
 -- Provides a CEK implementation of the \Stql language from the lecture notes
 module StqlEval where
 import StqlGrammar
-import Data.List ( isInfixOf, (\\), elemIndices, intercalate, nub )
+import Data.List ( isInfixOf, (\\), elemIndices, intercalate, nub, intersect )
 import Data.Char ( isSpace, isDigit )
 import GHC.OldList (elemIndex)
 import Data.Maybe (isNothing)
 import Data.List (isPrefixOf)
 import Data.List (sort)
 
-data StrFrame = HPlusStr String | PlusHStr Str
+data StrFrame = HPlusStr String | PlusHStr Str | HMinusStr String | MinusHStr Str
               | HListStr String | ListHStr Str
 data Frame =
            HAdd Expr Environment | AddH Expr
-           | HPlus Expr Environment | PlusH Expr
+           | HPlus Expr Environment | PlusH Expr | HMinus Expr Environment | MinusH Expr
            | Print | Format | List 
            | Processing Expr | HLet String StqlType
 type Kontinuation = [ Frame ]
@@ -74,13 +74,22 @@ evalStr' (s1, []) = unparseStr s1
 -}
 --Small step evaluation function
 eval1 :: State -> State
--- Evaluation rules for plus and sort var
+-- Evaluation rules for plus, minus sort var
 -- Only accept Var TmString plus
 eval1 (TmPlusVar e1 e2,env,k,r,p) = (e1,env,HPlus e2 env:k,r,p)
-eval1 (TmVar n,env1,(HPlus e env2):k,r,p) = if whichExp e' == "String" then (e,env2 ++ env1,PlusH e' : k,r,p) else error "PlusVar only accept String in Var now"
+eval1 (TmVar n,env1,(HPlus e env2):k,r,p) = if whichExp e' == "String" then (e,env2 ++ env1,PlusH e' : k,r,p) else error "PlusVar only accept String in Var"
                                          where e' = getValueBinding n env1
 eval1 (TmVar m,env,(PlusH (TmString n)):k,r,p) = (TmString (toListSort (unparse e' ++ "\n" ++ n)),env,k,r,p)
                                          where e'  = getValueBinding m env
+
+-- Only support Var TmString minus
+eval1 (TmMinusVar (TmVar e1) (TmVar e2), env, k, r, p) = (TmString (toListSort (minusDup (socToList (unparse (getValueBinding e2 env))) (socToList (unparse (getValueBinding e1 env))))), env, k, r, p)
+--eval1 (TmMinusVar e1 e2, env, k, r, p) = (e1, env, HMinus e2 env:k, r, p)
+--eval1 (TmVar n,env1,(HMinus e env2):k,r,p) = if whichExp e' == "String" then (e,env1 ++ env2,MinusH e' : k,r,p) else error "MinusVar only support string in Var"
+--                                        where e' = getValueBinding n env1
+--eval1 (TmVar m, env, (MinusH (TmString n)) : k, r, p) = (TmString (toListSort (minusDup (socToList (unparse e')) (socToList n))), env, k, r, p)
+--                                         where e' = getValueBinding m env
+
 
 -- Get var
 eval1 (TmVar x,env,k,r,p) = (e',env,k,r,p)
@@ -290,12 +299,13 @@ procProcSemic' l = [ s | (s1,s2) <- l, let s = map (s1++) (split ";" s2)]
 
 --For FillBasePrefixReady Function
 --Ready Part example: <http://www.cw.org/subjectA> <http://www.cw.org/predicateA> <http://www.cw.org/objectA> . 
+--Ready Part example: <http://www.cw.org/problem10/#maxValue><http://www.cw.org/problem10/#isValue> 18 .
 getNeedReady :: [String] -> [String]
-getNeedReady l = [ s | s <- l, length (split "http://" s) == 4]
+getNeedReady l = [ s | s <- l, length (split "http://" s) == 4] 
 --For FillBase Part, example: <prob4B> <testPredA> <prob4C> .
 --example: <http://www.cw.org/#problem2> <testPredA> true .
 getNeedFillBa :: [String] -> [String]
-getNeedFillBa l = [ s | s <- l, (length (split "http://" s) <= 2) && (isInfixOf ">") s && (not ("/>" `isInfixOf` s))]
+getNeedFillBa l = [ s | s <- l, (length (split "http://" s) <= 3) && (isInfixOf ">") s && (not ("/>" `isInfixOf` s))]
 procFillBa :: String -> Environment -> String
 procFillBa s env = filter (/=' ') (procFillBa' s env)
 procFillBa' :: String -> Environment -> String
@@ -372,6 +382,12 @@ clear env x | (length [ (y,e2) | (y,e2) <- env, x /= y ]) == (length env) = erro
 clearAll :: Environment -> Environment
 clearAll env = [ (y,e2) | (y,e2) <- env, isInfixOf ".ttl" y ]
 
+-- Minus the duplicate element
+minusDup :: [String] -> [String] -> String
+minusDup l1 l2 = unlines $ (l1 \\ l2)
+
+--l1 ["a","b"]
+--l2 ["a","c"]
 {-------------------------------------------------------------------------------------------
 --tools and check function
 --These are the generic little functions that use

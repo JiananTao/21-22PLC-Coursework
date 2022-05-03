@@ -7,7 +7,7 @@ type TypeEnvironment = [ (String, StqlType) ]
 data Frame =
            HAdd Expr | Int
            | HPlus Expr | String 
-           | HPlusVar Expr | Delimit
+           | HPlusVar Expr | Delimit |HMinusVar Expr
            | FillBasePrefixReady | ProcSemicComma
            | Print | Format | List 
            | Processing Expr | HLet String StqlType
@@ -60,7 +60,14 @@ typeOf' (p,k,tenv, (TmAddString e1 e2)) = (p,HPlus e2:k,tenv,e1)
 typeOf' (p,k,tenv, (TmPlusVar e1 e2)) = (p,HPlusVar e2:k,tenv,e1)
 typeOf' (p,(HPlusVar e):k,tenv, TmVar x ) = (p,(typeToK (getBinding x tenv)):k,tenv,e)
 typeOf' (p,(HPlusVar e):k,tenv, _ ) = error ("  Error in Token 'PlusVar' \n" ++
-                                                 "  Expr 'PlusVar' Expr,  \n") 
+                                                 "  Expr 'PlusVar' Expr,  \n")
+
+--Exp: MinusVar
+typeOf' (p, k, tenv, (TmMinusVar e1 e2)) = (p, HMinusVar e2:k, tenv, e1)
+typeOf' (p, (HMinusVar e): k,tenv, TmVar x ) = (p,(typeToK (getBinding x tenv)):k,tenv,e)
+typeOf' (p, (HMinusVar e): k,tenv, _ ) = error ("Error in Token 'MinusVar' \n" ++
+                                                 " Expr 'MinusVar' Expr, \n")
+
 --Exp: var
 typeOf' (p,k,tenv, (TmVar x)) = (p,k,tenv,getExpr(getBinding x tenv))
                             

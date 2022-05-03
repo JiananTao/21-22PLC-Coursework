@@ -15,6 +15,7 @@ import StqlTokens
     string { TokenString _ $$ } 
     '++'   { TokenPlusString _ }
     PlusVar { TokenPlusVar _ }
+    MinusVar { TokenMinusVar _}
     '+'    { TokenPlus _ }
     var    { TokenVar _ $$ }
     Let    { TokenLet _ }
@@ -52,6 +53,7 @@ import StqlTokens
 %left '+'
 %left '++'
 %left PlusVar
+%left MinusVar
 %nonassoc int true false var '(' ')'
 
 
@@ -65,6 +67,7 @@ Exp : int                                       { TmInt $1 }
     | '[' string '|' Str ']'                    { TmList $2 $4 }
     | Exp '++' Exp                              { TmAddString $1 $3 }
     | Exp PlusVar Exp                           { TmPlusVar $1 $3 }
+    | Exp MinusVar Exp                          { TmMinusVar $3 $1 }
     | Exp '+' Exp                               { TmAdd $1 $3 }
     | Let '(' var ':' Type ')' '=' Exp          { TmLet $3 $5 $8 }
     | Clear '(' var ':' Type ')'                { TmClear $3 $5 }
@@ -105,7 +108,7 @@ data Expr = TmInt Int | TmString String | TmTTLFile String
             | TmAddString Expr Expr
             | TmLet String StqlType Expr
             | TmList String Str 
-            | TmPrint Expr | TmPlusVar Expr Expr
+            | TmPrint Expr | TmPlusVar Expr Expr | TmMinusVar Expr Expr
             | TmGetVar String | TmReadEnv | TmFormat Expr
             | TmFillBasePrefixReady String 
             | TmProcSemicComma String 

@@ -18,7 +18,8 @@ tokens :-
   Path           { tok (\p s -> TokenTypePath p) }
   $digit+        { tok (\p s -> TokenInt p (read s)) }
   "++"           { tok (\p s -> TokenPlusString p) }    
-  PlusVar        { tok (\p s -> TokenPlusVar p )}      
+  PlusVar        { tok (\p s -> TokenPlusVar p )}  
+  MinusVar       { tok (\p s -> TokenMinusVar p)}    
   \+             { tok (\p s -> TokenPlus p) }
   \:             { tok (\p s -> TokenHasType p) }
   ClearAll       { tok (\p s -> TokenClearAll p )}
@@ -63,6 +64,7 @@ data StqlToken =
   TokenPlus AlexPosn             |
   TokenPlusString AlexPosn       |
   TokenPlusVar AlexPosn          |
+  TokenMinusVar AlexPosn         |
   TokenHasType AlexPosn          |
   TokenLet AlexPosn              |
   TokenPrint AlexPosn            |
@@ -97,6 +99,7 @@ tokenPosn (TokenString  (AlexPn a l c) _) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenPlus  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenPlusString  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenPlusVar  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenMinusVar  (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenHasType (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenLet (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenGetVar (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
