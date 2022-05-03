@@ -83,12 +83,11 @@ eval1 (TmVar m,env,(PlusH (TmString n)):k,r,p) = (TmString (toListSort (unparse 
                                          where e'  = getValueBinding m env
 
 -- Only support Var TmString minus
-eval1 (TmMinusVar (TmVar e1) (TmVar e2), env, k, r, p) = (TmString (toListSort (minusDup (socToList (unparse (getValueBinding e2 env))) (socToList (unparse (getValueBinding e1 env))))), env, k, r, p)
---eval1 (TmMinusVar e1 e2, env, k, r, p) = (e1, env, HMinus e2 env:k, r, p)
---eval1 (TmVar n,env1,(HMinus e env2):k,r,p) = if whichExp e' == "String" then (e,env1 ++ env2,MinusH e' : k,r,p) else error "MinusVar only support string in Var"
---                                        where e' = getValueBinding n env1
---eval1 (TmVar m, env, (MinusH (TmString n)) : k, r, p) = (TmString (toListSort (minusDup (socToList (unparse e')) (socToList n))), env, k, r, p)
---                                         where e' = getValueBinding m env
+eval1 (TmMinusVar e1 e2, env, k, r, p) = (e1, env, HMinus e2 env:k, r, p)
+eval1 (TmVar n,env1,(HMinus e env2):k,r,p) = if whichExp e' == "String" then (e,env1 ++ env2,MinusH e' : k,r,p) else error "MinusVar only support string in Var"
+                                        where e' = getValueBinding n env1
+eval1 (TmVar m, env, (MinusH (TmString n)) : k, r, p) = (TmString (toListSort (minusDup (socToList (unparse e')) (socToList n))), env, k, r, p)
+                                         where e' = getValueBinding m env
 
 
 -- Get var
@@ -386,8 +385,6 @@ clearAll env = [ (y,e2) | (y,e2) <- env, isInfixOf ".ttl" y ]
 minusDup :: [String] -> [String] -> String
 minusDup l1 l2 = unlines $ (l1 \\ l2)
 
---l1 ["a","b"]
---l2 ["a","c"]
 {-------------------------------------------------------------------------------------------
 --tools and check function
 --These are the generic little functions that use
