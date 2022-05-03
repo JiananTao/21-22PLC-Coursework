@@ -3,6 +3,7 @@
 Stql
 *.hi
 *.o
+*.ttl
 StqlGrammar.hs
 StqlTokens.hs
 out.txt
