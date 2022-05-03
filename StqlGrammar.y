@@ -100,7 +100,7 @@ data StqlType = TyInt | TyString | TyPath
 --Let (x:String) = "a";
 -- (x,TmString "a")
 type Environment = [ (String,Expr) ]
-data Expr = TmInt Int | TmString String | TmPath String | TmTTLFile String
+data Expr = TmInt Int | TmString String | TmTTLFile String
             | TmAdd Expr Expr | TmVar String 
             | TmAddString Expr Expr
             | TmLet String StqlType Expr
