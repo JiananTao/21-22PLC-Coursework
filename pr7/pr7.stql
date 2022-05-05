@@ -1,0 +1,12 @@
+Let (foo:String) = (ReadFile foo.ttl);
+Let (foo2:String) = (ProcSemicComma foo);
+GetVars foo2;
+Let (allF2:String) = Format (FillBasePrefixReady foo2);
+
+
+Let (all1:String) = (Delimit "Subj" "http://www.cw.org/problem7/#subject" In allF2);
+Let (all2:String) = (Delimit "Pred" "http://www.cw.org/problem7/#predicate" In allF2);
+Let (all3:String) = (Delimit "Obj" "-1" In allF2);
+Let (all4:String) = (Delimit "Obj" "0" In allF2);
+
+Print (Format (all1 ++ all2 ++ all3 ++ all4));

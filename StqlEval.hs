@@ -222,7 +222,7 @@ pcDelimit i s l | "\n" `isInfixOf` s = unlines $ nub [ r | r <- l , r' <- wordsW
                 | otherwise = unlines [ rr | (r1,r2,r3,rr) <- splitTriples l , case i of
                                                   1 -> s `isInfixOf` r1
                                                   2 -> s `isInfixOf` r2
-                                                  3 -> s `isInfixOf` r3
+                                                  3 -> eqString s r3
                                                   _ -> error "The error occurs in the pcDelimit function in StqlEval.hs, this is a developer error"]
 --For Compare Function
 --Because it has been verified that there are 3, so! ! no error is thrown

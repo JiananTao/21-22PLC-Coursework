@@ -1,0 +1,9 @@
+<http://www.cw.org/problem7/#subject><http://www.cw.org/testPredA> 10 .
+<http://www.cw.org/problem7/#subject><http://www.cw.org/testPredA> true .
+<http://www.cw.org/problem7/#subject><http://www.cw.org/testPredA>"hello" .
+<http://www.cw.org/testSubA><http://www.cw.org/hasNegInt> -1 .
+<http://www.cw.org/testSubA><http://www.cw.org/problem7/#predicate> true .
+<http://www.cw.org/testSubA><http://www.cw.org/testObjList> -1 .
+<http://www.cw.org/testSubA><http://www.cw.org/testPredList> 0 .
+<http://www.cw.org/testSubB><http://www.cw.org/problem7/#predicate> 10 .
+<http://www.cw.org/testSubC><http://www.cw.org/problem7/#predicate>"hello" .

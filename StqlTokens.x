@@ -7,7 +7,7 @@ module StqlTokens where
 $digit = 0-9     
 -- alphabetic characters
 $alpha = [a-zA-Z]   
-$algit = [a-zA-Z0-9\#\:\/\.]
+$algit = [a-zA-Z0-9\#\:\/\.\+\-]
 
 
 tokens :-
