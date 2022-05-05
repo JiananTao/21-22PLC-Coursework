@@ -1,0 +1,3 @@
+<http://www.cw.org/prob9A><http://www.cw.org/testPredA><http://www.cw.org/obj9A> .
+<http://www.cw.org/subjectA><http://www.cw.org/predicateA><http://www.cw.org/objectA> .
+

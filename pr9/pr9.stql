@@ -1,0 +1,22 @@
+Let (foo:String) = (ReadFile foo.ttl);
+Let (foo2:String) = (ProcSemicComma foo);
+GetVars foo2;
+Let (allF2:String) = Format (FillBasePrefixReady foo2);
+
+Let (bar:String) = (ReadFile bar.ttl);
+Let (bar2:String) = (ProcSemicComma bar);
+GetVars bar2;
+Let (allB2:String) = Format (FillBasePrefixReady bar2);
+
+Let (baz:String) = (ReadFile baz.ttl);
+Let (baz2:String) = (ProcSemicComma baz);
+GetVars baz2;
+Let (allZ2:String) = Format (FillBasePrefixReady baz2);
+
+Let (onlyUri:String) = Format (Delimit "Obj" "http://" In allF2);
+Let (all1:String) = Format (Compare "Pred" onlyUri In "Pred" allB2);
+Let (all2:String) = Format (Compare "URIObj" onlyUri In "URIObj" allZ2);
+
+Print all2;
+
+

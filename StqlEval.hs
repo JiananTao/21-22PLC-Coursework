@@ -160,7 +160,9 @@ eval1 (TmDelimit pos s x, env,k,r,p) | rmQuo pos == "Subj" && whichExp s == "Str
                         let s' = pcDelimit 3 (rmQuo (unparse s) ) (socToList (varStr x env)) in (TmString s',env,k,r,p)
                                      | rmQuo pos == "Obj" && whichExp s == "Var"    =
                         let s' = pcDelimit 3 (rmQuo (unparse (getValueBinding' s env))) (socToList (varStr x env)) in (TmString s',env,k,r,p)
-                                     | otherwise = error "Delimit must obey this rule: Delimit ""Pred""Subj""Obj""(3 choose 1) Var/String In Var"
+                                     | rmQuo pos == "EQObj" && whichExp s == "String"    =
+                        let s' = pcDelimit 33 (rmQuo (unparse s) ) (socToList (varStr x env)) in (TmString s',env,k,r,p)
+                                     | otherwise = error "Delimit must obey this rule: Delimit ""Pred""Subj""Obj""EQObj""(3 choose 1) Var/String In Var"
 
 -- Evaluation rules for Compare blocks
 eval1 (TmCompare s1 f1 s2 f2, env,k,r,p) = (TmString s', env,k,r,p)
@@ -222,7 +224,8 @@ pcDelimit i s l | "\n" `isInfixOf` s = unlines $ nub [ r | r <- l , r' <- wordsW
                 | otherwise = unlines [ rr | (r1,r2,r3,rr) <- splitTriples l , case i of
                                                   1 -> s `isInfixOf` r1
                                                   2 -> s `isInfixOf` r2
-                                                  3 -> eqString s r3
+                                                  3 -> s `isInfixOf` r3
+                                                  33 -> eqString s r3
                                                   _ -> error "The error occurs in the pcDelimit function in StqlEval.hs, this is a developer error"]
 --For Compare Function
 --Because it has been verified that there are 3, so! ! no error is thrown
@@ -232,9 +235,13 @@ pcCompare s1 f1 s2 f2 | s1 == "Obj" && s2 == "Subj" = unlines $ nub $ [r1 |
                                                       r2 <- f2, length (filter (== '<') r2) == 3,
                                                       wordsWhen (== '>') r1 !! 2 == head (wordsWhen (== '>') r2)]
                       | s1 == "Pred" && s2 == "Pred" = unlines $ nub $ [r1 |
-                                                      r1 <- f1, 
-                                                      r2 <- f2, 
+                                                      r1 <- f1, length (filter (== '<') r1) >= 2,
+                                                      r2 <- f2, length (filter (== '<') r1) >= 2,
                                                       wordsWhen (== '>') r1 !! 1 == wordsWhen (== '>') r2 !! 1]
+                      | s1 == "URIObj" && s2 == "URIObj" = unlines $ nub $ [r1 |
+                                                      r1 <- f1, length (filter (== '<') r1) == 3,
+                                                      r2 <- f2, length (filter (== '<') r2) == 3,
+                                                      wordsWhen (== '>') r1 !! 2 == wordsWhen (== '>') r2 !! 2]
                       | otherwise = "Only support s1 == Obj && s2 == Subj/s1 == Pred && s2 == Pred"
 --For LiteralsNum Function
 pcLiteralsNum :: [String] -> String
@@ -255,7 +262,7 @@ pcLiteralsNum s = (unlines $ sort $ [ r'' |
 --   .
 formatResultF :: [String] -> [String]
 formatResultF l = [ r' | r <- formatType' (formatType (formatResult' (formatResult l))),
-                        let r' = replace "  " " " r]
+                        let r' = replace ">.<" "><" (replace "  " " " r)]
 formatResult :: [String] -> [String]
 formatResult l = nub [ s'' | s <- l, let s' = replace ". " "" (filter (/=' ') s ++ "  ."),
                                      let s'' = replace "  " " " $ reverse (replaceFirst  '>' " >" (reverse s'))]
