@@ -24,12 +24,14 @@ main' = do (fileName : _ ) <- getArgs
 
            let typedProg = typeLoop ([], [],[], parsedProg)
            let result = unlines $ (unparseAll (evalLoop (parsedProg,fileToEnv fileNameList fileList,[],[],[])))
+           {-
            putStrLn ("Parsing : " ++ sourceSolution)   
            putStrLn ("Tokens as " ++ show resultAlex ++ "\n")
            putStrLn ("Parsed as " ++ show parsedProg ++ "\n")
            putStrLn ("Type Checking...")
            putStrLn ("  " ++ typedProg ++ "\n") 
            writeFile "out.txt" ("Result as \n" ++ result)
+           -}
            putStrLn result
            
            
