@@ -78,6 +78,7 @@ typeOf' (p,(HAdd e):k,tenv, _ ) = error ("  Error in Token '+' \n" ++
                                                  "  Expr '+' Expr,  \n")
 --Exp: int
 typeOf' (p,Int:k,tenv,TmString _) = error "  token '+' only accept Int type\n"
+
 --Exp: string
 typeOf' (p,String:k,tenv,TmInt _) = error "  token '++' only accept String type\n"
 typeOf' ( p, String:k, tenv, e) = ( p, k, tenv, e)
@@ -129,6 +130,11 @@ typeOf' (p,k,tenv,TmCompare s1 v1 s2 v2) | not (isString s1 || isString s2) = er
 --Exp: LiteralsNum
 typeOf' (p,k,tenv,TmLiteralsNum s) | not (isVar s) = error ("  Error in Token LiteralsNum\n" ++ "  LiteralsNum")
                                    | otherwise = (p,k,tenv,TmString "LiteralsNum")
+
+--Exp: ProcObj
+typeOf' (p,k,tenv,TmProcObj s1 s2 s3 s4 v1 v2 ) | not (isString s1 || isString s2 || isString s3 || isString s4) = error ("  Error in Token ProcObj\n" ++ "  ProcObj only handle String")
+                                         | getBinding v1 tenv == getBinding v2 tenv =  (p,k,tenv,TmString"ProcObj")
+
 --something must be in back
 typeOf' (p,Delimit:k,tenv,e) | getType e == TyString = (p,k,tenv,e)
                              | otherwise = error ("  Error in Token Delimit\n" ++ "  Delimit olny handle variables bound to type String")
