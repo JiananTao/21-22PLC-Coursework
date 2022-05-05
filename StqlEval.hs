@@ -146,7 +146,10 @@ eval1 (TmFillBasePrefixReady s, env,k,r,p) = (TmString s',env,k,r,p)
                            where s' = procFillPr (unlines (getNeedFillPr (socToList (varStr s env)))) env ""
                                    ++ "\n" ++ procFillBa (unlines (getNeedFillBa (socToList (varStr s env)))) env
                                    ++ "\n" ++ unlines (getNeedReady (socToList (varStr s env)))
-
+-- Evaluation rules for ProcObj blocks
+eval1 (TmProcObj uri int bool string all one, env,k,r,p) | rmQuo uri == "URI" && rmQuo int == "MaxInt" && rmQuo bool == "NegateBool" && rmQuo string == "String" = 
+                                             let s' = pcObj 1 9 (-1) 1 (socToList (varStr all env)) (filter (/="\n") (socToList (varStr one env))) in (TmString s',env,k,r,p)
+                                                         | otherwise = error "only support input "
 -- Evaluation rules for Delimit blocks
 eval1 (TmDelimit pos s x, env,k,r,p) | rmQuo pos == "Subj" && whichExp s == "String" =
                         let s' = pcDelimit 1 (rmQuo (unparse s) ) (socToList (varStr x env)) in (TmString s',env,k,r,p)
@@ -162,7 +165,9 @@ eval1 (TmDelimit pos s x, env,k,r,p) | rmQuo pos == "Subj" && whichExp s == "Str
                         let s' = pcDelimit 3 (rmQuo (unparse (getValueBinding' s env))) (socToList (varStr x env)) in (TmString s',env,k,r,p)
                                      | rmQuo pos == "EQObj" && whichExp s == "String"    =
                         let s' = pcDelimit 33 (rmQuo (unparse s) ) (socToList (varStr x env)) in (TmString s',env,k,r,p)
-                                     | otherwise = error "Delimit must obey this rule: Delimit ""Pred""Subj""Obj""EQObj""(3 choose 1) Var/String In Var"
+                                     | rmQuo pos == "ObjInt" && whichExp s == "String"    =
+                        let s' = pcDelimit 333 (rmQuo (unparse s) ) (socToList (varStr x env)) in (TmString s',env,k,r,p)
+                                     | otherwise = error "Delimit must obey this rule: Delimit ""Pred""Subj""Obj""EQObj""ObjInt""(5 choose 1) Var/String In Var"
 
 -- Evaluation rules for Compare blocks
 eval1 (TmCompare s1 f1 s2 f2, env,k,r,p) = (TmString s', env,k,r,p)
@@ -219,6 +224,28 @@ getFourth (a,b,c,d,e) = d
 --
 --
 -}
+pcObj :: Int -> Int -> Int -> Int -> [String] -> [String] -> String
+pcObj uri int bool string all one | length one /= 1 = error "Please make sure there are no \"\\\n\" within the last constraint entered (only one line)"
+                                  | uri == 1 && int == 9 && bool == (-1) && string == 1 = unlines $ pcObj19N11 all (getMaxObj one)
+                                  | otherwise = "Unknown error"
+getMaxObj :: [String] -> Int 
+getMaxObj l = readInt (head [ r3 | (r1,r2,r3,rr) <- splitTriples l])
+pcObj19N11 :: [String] -> Int -> [String]
+pcObj19N11 all i = [ r1 ++ r2 ++ r' | (r1,r2,r3,rr) <- splitTriples all, let r' = pcObj19N11' (filter (/=' ') r3) (readInt (typeSort r3)) i] 
+pcObj19N11' :: String -> Int -> Int -> String
+pcObj19N11' r3 4 i = r3
+pcObj19N11' r3 3 i = if r3 == "true" then "false" else "true"
+pcObj19N11' r3 2 i = if readInt r3 > i then show i else r3
+pcObj19N11' r3 1 i = r3
+{-
+typeSort :: String -> String
+typeSort s | isInfixOf "\"" s = "4"
+           | isInfixOf "http://" s = "1"
+           | isInfixOf "true" s = "3"
+           | isInfixOf "false" s = "3"
+           | ifAllDigit s = "2"
+           | otherwise = s
+-}
 pcDelimit :: Int -> String -> [String] -> String
 pcDelimit i s l | "\n" `isInfixOf` s = unlines $ nub [ r | r <- l , r' <- wordsWhen (=='\n') s, r' `isInfixOf` r]
                 | otherwise = unlines [ rr | (r1,r2,r3,rr) <- splitTriples l , case i of
@@ -226,6 +253,8 @@ pcDelimit i s l | "\n" `isInfixOf` s = unlines $ nub [ r | r <- l , r' <- wordsW
                                                   2 -> s `isInfixOf` r2
                                                   3 -> s `isInfixOf` r3
                                                   33 -> eqString s r3
+                                                  --TODO:bug ifAllDigit (filter (/='.') (filter (/=' ') r3))
+                                                  333 -> ifAllDigit r3
                                                   _ -> error "The error occurs in the pcDelimit function in StqlEval.hs, this is a developer error"]
 --For Compare Function
 --Because it has been verified that there are 3, so! ! no error is thrown
@@ -422,12 +451,11 @@ ifHasDigit :: String  -> Bool
 ifHasDigit s = not $ null [ r | r <- s, isDigit r]
 ifAllDigit :: String  -> Bool
 ifAllDigit s = not (null [ r | r <- s]) && (length [ r | r <- s]) == length ([ r | r <- s, isDigit r || (r == '+') || (r == '-')])
---TODO: use filter to remove space
 readInt :: String -> Int
-readInt s | eqString s "+" = read (tail s)
-          | eqString s "-" = negate (read (tail s))
-          | otherwise      = read s
-          where s' = filter (==' ') s
+readInt s | eqString s1 "+" = read (tail s1)
+          | eqString s1 "-" = negate (read (tail s1))
+          | otherwise      = read s1
+          where s1 = filter (/=' ') s
 rmMaybe :: Maybe a -> a
 rmMaybe (Just a) = a
 rmMaybe Nothing = error ("error in reMaybe function which means something has Nothing in Maybe a\n" ++ "Maybe in Token 'Format'")

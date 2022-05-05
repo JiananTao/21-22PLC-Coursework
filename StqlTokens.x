@@ -43,6 +43,7 @@ tokens :-
   Compare        { tok (\p s -> TokenCompare p) }
   LiteralsNum    { tok (\p s -> TokenLiteralsNum p) }
   FillBasePrefixReady     { tok (\p s -> TokenFillBasePrefixReady p) }
+  ProcObj { tok (\p s -> TokenProcObj p) }
   [$alpha $digit \_ \']*.ttl    { tok (\p s -> TokenTTLFile p s) }
   \"$algit*\"    { tok (\p s -> TokenString p s) }
   $alpha+ [$alpha $digit \_ \’ ]*      { tok (\p s -> TokenVar p s) }
@@ -87,6 +88,7 @@ data StqlToken =
   TokenCompare AlexPosn          |
   TokenIn AlexPosn               |
   TokenLiteralsNum AlexPosn      |
+  TokenProcObj AlexPosn          |
   TokenReadEnv AlexPosn
   deriving (Eq,Show) 
 
@@ -118,6 +120,7 @@ tokenPosn (TokenReadEnv (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenFormat (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenFillBasePrefixReady (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenProcSemicComma (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+tokenPosn (TokenProcObj (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenDelimit (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenCompare (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 tokenPosn (TokenIn (AlexPn a l c)) = show(l) ++ ":" ++ show(c)

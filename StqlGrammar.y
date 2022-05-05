@@ -40,6 +40,7 @@ import StqlTokens
     Compare          { TokenCompare _ }
     In               { TokenIn _ }
     LiteralsNum      { TokenLiteralsNum _ }
+    ProcObj          { TokenProcObj _ }
 
 %left ';'
 %left '['
@@ -80,6 +81,7 @@ Exp : int                                       { TmInt $1 }
     | GetVars var                               { TmGetVar $2 }
     | ReadEnv                                   { TmReadEnv }
     | Format Exp                                { TmFormat $2 }
+    | ProcObj string string string string In var var { TmProcObj $2 $3 $4 $5 $7 $8 }
     | FillBasePrefixReady var                   { TmFillBasePrefixReady $2}
     | ProcSemicComma var                        { TmProcSemicComma $2}
     | Delimit string Exp In var                 { TmDelimit $2 $3 $5 }
@@ -108,6 +110,7 @@ data Expr = TmInt Int | TmString String | TmTTLFile String
             | TmAddString Expr Expr
             | TmLet String StqlType Expr
             | TmList String Str 
+            | TmProcObj String String String String String String
             | TmPrint Expr | TmPlusVar Expr Expr | TmMinusVar Expr Expr
             | TmGetVar String | TmReadEnv | TmFormat Expr
             | TmFillBasePrefixReady String 
