@@ -30,9 +30,9 @@ main' = do (fileName : _ ) <- getArgs
            putStrLn ("Parsed as " ++ show parsedProg ++ "\n")
            putStrLn ("Type Checking...")
            putStrLn ("  " ++ typedProg ++ "\n") 
-           
-           writeFile "out.txt" ("Result as \n" ++ result)
            -}
+           writeFile "out.txt" ("Result as \n" ++ result)
+           
            putStrLn result
            
            

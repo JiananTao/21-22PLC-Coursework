@@ -1,0 +1,25 @@
+--./Stql pr6.stql;
+Let (foo:String) = (ReadFile foo.ttl);
+Let (foo2:String) = (ProcSemicComma foo);
+GetVars foo2;
+Let (allF2:String) = Format (FillBasePrefixReady foo2);
+
+Let (bar:String) = (ReadFile bar.ttl);
+Let (bar2:String) = (ProcSemicComma bar);
+GetVars bar2;
+Let (allB2:String) = Format (FillBasePrefixReady bar2);
+
+Let (baz:String) = (ReadFile baz.ttl);
+Let (baz2:String) = (ProcSemicComma baz);
+GetVars baz2;
+Let (allZ2:String) = Format (FillBasePrefixReady baz2);
+
+Let (all1:String) = Format (Compare "Pred" allF2 In "Pred" allB2);
+Let (all2:String) = Format (Compare "Pred" allB2 In "Pred" allF2);
+Let (all3:String) = Format (all1 ++ all2);
+
+Let (r1:String) = Format (Compare "Pred" all3 In "Pred" allZ2);
+Let (r2:String) = Format (Compare "Pred" allZ2 In "Pred" all3);
+Print (Format (r1 ++ r2));
+
+

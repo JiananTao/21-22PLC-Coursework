@@ -231,7 +231,11 @@ pcCompare s1 f1 s2 f2 | s1 == "Obj" && s2 == "Subj" = unlines $ nub $ [r1 |
                                                       r1 <- f1, length (filter (== '<') r1) == 3,
                                                       r2 <- f2, length (filter (== '<') r2) == 3,
                                                       wordsWhen (== '>') r1 !! 2 == head (wordsWhen (== '>') r2)]
-                      | otherwise = "Only support s1 about Obj, s2 about Subj"
+                      | s1 == "Pred" && s2 == "Pred" = unlines $ nub $ [r1 |
+                                                      r1 <- f1, 
+                                                      r2 <- f2, 
+                                                      wordsWhen (== '>') r1 !! 1 == wordsWhen (== '>') r2 !! 1]
+                      | otherwise = "Only support s1 == Obj && s2 == Subj/s1 == Pred && s2 == Pred"
 --For LiteralsNum Function
 pcLiteralsNum :: [String] -> String
 pcLiteralsNum s = (unlines $ sort $ [ r'' |
